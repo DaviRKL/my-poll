@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Habilita o modo escuro acionado pela classe 'dark' no elemento raiz */
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Cores primárias extraídas do Figma */
+  --color-primary-400: #5c6bc0;
+  --color-primary-500: #3f51b5;
+}
