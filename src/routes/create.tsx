@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { PlusCircle, Trash2, Calendar, Loader2, AlertCircle, LogIn } from 'lucide-react'
+import { PlusCircle, Trash2, Calendar, Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { createPoll } from '../services/pollService'
 import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { AuthPrompt } from '../components/AuthPrompt'
 import { toDateTimeLocalString } from '../utils/formatDate'
 import type { Poll, PollStatus } from '../types'
 
@@ -15,9 +16,9 @@ export const Route = createFileRoute('/create')({
 
 function CreatePollPage() {
   const navigate = useNavigate()
-  const { user, loginWithGoogle, loginAnon } = useAuth()
+  const { user } = useAuth()
 
-  // Estados locais controlados
+  // Estados locais controlados do formulário
   const [title, setTitle] = useState('')
   const [options, setOptions] = useState<string[]>(['', '', '']) // Mínimo de 3 opções iniciais (RN5)
 
@@ -58,7 +59,7 @@ function CreatePollPage() {
     setError(null)
 
     if (!user) {
-      setError('Você precisa estar autenticado para criar uma enquete.')
+      setError('É necessário estar autenticado para criar uma enquete.')
       return
     }
 
@@ -124,6 +125,28 @@ function CreatePollPage() {
     }
   }
 
+  // Se o utilizador NÃO estiver autenticado, exibe o AuthPrompt centralizado
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Criar enquete
+          </h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Preencha os seguintes campos para criar a sua enquete
+          </p>
+        </div>
+
+        <AuthPrompt
+          title="Inicie sessão para criar uma enquete"
+          description="Para publicar enquetes em tempo real na plataforma, é necessário autenticar-se previamente."
+        />
+      </div>
+    )
+  }
+
+  // Se o utilizador estiver autenticado, renderiza o formulário normalmente
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Título e Subtítulo Centralizados conforme Figma */}
@@ -135,34 +158,6 @@ function CreatePollPage() {
           Preencha os seguintes campos para criar a sua enquete
         </p>
       </div>
-
-      {/* Alerta de Autenticação se não logado */}
-      {!user && (
-        <div className="p-5 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-amber-800 dark:text-amber-300 text-sm">
-            <LogIn size={20} className="shrink-0" />
-            <span>
-              Identifique-se para publicar sua enquete em tempo real.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => loginWithGoogle()}
-            >
-              Entrar com Google
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => loginAnon()}
-            >
-              Anônimo
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Formulário Principal */}
       <Card>
@@ -259,7 +254,7 @@ function CreatePollPage() {
               variant="primary"
               size="lg"
               fullWidth
-              disabled={submitting || !user}
+              disabled={submitting}
               leftIcon={submitting ? <Loader2 size={18} className="animate-spin" /> : undefined}
             >
               {submitting ? 'Criando enquete...' : 'Criar enquete'}

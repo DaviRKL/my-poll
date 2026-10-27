@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
-import { AlertCircle, Loader2, LogIn, ArrowLeft } from 'lucide-react'
+import { AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
 import { usePoll } from '../hooks/usePoll'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { PollResultBar } from '../components/PollResultBar'
+import { AuthPrompt } from '../components/AuthPrompt'
 import { formatPollDate } from '../utils/formatDate'
 
 export const Route = createFileRoute('/poll/$pollId')({
@@ -15,7 +16,7 @@ export const Route = createFileRoute('/poll/$pollId')({
 function PollDetailsPage() {
   const { pollId } = Route.useParams()
   const navigate = useNavigate()
-  const { user, loginWithGoogle, loginAnon } = useAuth()
+  const { user } = useAuth()
   const { poll, loading, hasVoted, handleVote, isVotingActive } = usePoll(pollId)
 
   // Estado local para opção selecionada
@@ -25,7 +26,7 @@ function PollDetailsPage() {
   const [voting, setVoting] = useState(false)
   const [voteError, setVoteError] = useState<string | null>(null)
 
-  // Deve exibir os resultados se o usuário já votou OU se clicou no botão "Resultados"
+  // Deve exibir os resultados se o utilizador já votou OU se clicou no botão "Resultados"
   const isViewingResults = hasVoted || showResultsManual
 
   // Cálculo de votos totais para percentuais
@@ -96,45 +97,20 @@ function PollDetailsPage() {
     )
   }
 
-  // Estado: Usuário não autenticado (!user)
+  // Estado: Utilizador não autenticado (!user)
+  // Renderiza o AuthPrompt para forçar a identificação e evitar votos duplicados
   if (!user) {
     return (
-      <div className="max-w-md mx-auto py-8">
-        <Card className="text-center space-y-6">
-          <div className="w-12 h-12 rounded-full bg-primary-500/10 text-primary-500 flex items-center justify-center mx-auto">
-            <LogIn size={24} />
-          </div>
-
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
-              {poll.title}
-            </h2>
-            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-              Faça login para participar e votar nesta enquete em tempo real.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 pt-2">
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={() => loginWithGoogle()}
-            >
-              Entrar com Google
-            </Button>
-            <Button
-              variant="secondary"
-              fullWidth
-              onClick={() => loginAnon()}
-            >
-              Continuar como Anônimo
-            </Button>
-          </div>
-        </Card>
+      <div className="max-w-md mx-auto py-6">
+        <AuthPrompt
+          title={`Votar em "${poll.title}"`}
+          description="É necessário identificar-se (com Google ou anonimamente) para registrar seu voto em tempo real e garantir a unicidade do voto."
+        />
       </div>
     )
   }
 
+  // Se o utilizador estiver autenticado, renderiza o fluxo normal de votação / resultados
   return (
     <div className="max-w-lg mx-auto py-6">
       {/* VOTAÇÃO OU RESULTADOS BASEADOS NO DESIGN FIGMA */}

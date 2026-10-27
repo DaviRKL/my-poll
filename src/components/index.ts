@@ -1,3 +1,5 @@
 export * from './ui'
 export * from './PollCard'
 export * from './PollResultBar'
+export * from './ThemeToggle'
+export * from './AuthPrompt'
