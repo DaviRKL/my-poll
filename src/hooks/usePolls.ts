@@ -22,6 +22,7 @@ export const usePolls = (statusFilter: PollStatus | "" = "") => {
   }, [statusFilter]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPolls();
   }, [fetchPolls]);
 

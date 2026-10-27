@@ -116,7 +116,7 @@ export const checkUserHasVoted = async (
   pollId: string,
   userId: string,
 ): Promise<boolean> => {
-  const voteRef = doc(db, VOTES_COLLECTION, `${pollId}_${userId}`);
+
   const voteSnap = await getDocs(
     query(
       collection(db, VOTES_COLLECTION),
