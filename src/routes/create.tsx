@@ -1,128 +1,272 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import React, { useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { PlusCircle, Trash2, Calendar, Loader2, AlertCircle, LogIn } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import { createPoll } from '../services/pollService'
+import { Card } from '../components/ui/Card'
+import { Input } from '../components/ui/Input'
+import { Button } from '../components/ui/Button'
+import { toDateTimeLocalString } from '../utils/formatDate'
+import type { Poll, PollStatus } from '../types'
 
 export const Route = createFileRoute('/create')({
   component: CreatePollPage,
 })
 
 function CreatePollPage() {
+  const navigate = useNavigate()
+  const { user, loginWithGoogle, loginAnon } = useAuth()
+
+  // Estados locais controlados
+  const [title, setTitle] = useState('')
+  const [options, setOptions] = useState<string[]>(['', '', '']) // Mínimo de 3 opções iniciais (RN5)
+
+  // Datas padrão: Início agora e Término daqui a 7 dias
+  const [startDate, setStartDate] = useState(() => toDateTimeLocalString(new Date()))
+  const [endDate, setEndDate] = useState(() => {
+    const nextWeek = new Date()
+    nextWeek.setDate(nextWeek.getDate() + 7)
+    return toDateTimeLocalString(nextWeek)
+  })
+
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Manipulação dinâmica de opções
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...options]
+    newOptions[index] = value
+    setOptions(newOptions)
+  }
+
+  const handleAddOption = () => {
+    setOptions((prev) => [...prev, ''])
+  }
+
+  const handleRemoveOption = (indexToRemove: number) => {
+    if (options.length <= 3) {
+      setError('A enquete deve ter no mínimo 3 opções (RN5).')
+      return
+    }
+    setOptions((prev) => prev.filter((_, idx) => idx !== indexToRemove))
+    setError(null)
+  }
+
+  // Validação e Envio
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!user) {
+      setError('Você precisa estar autenticado para criar uma enquete.')
+      return
+    }
+
+    if (!title.trim()) {
+      setError('Por favor, informe o título da enquete.')
+      return
+    }
+
+    const filledOptions = options.map((opt) => opt.trim()).filter((opt) => opt.length > 0)
+    if (filledOptions.length < 3) {
+      setError('A enquete deve ter no mínimo 3 opções de resposta preenchidas (RN5).')
+      return
+    }
+
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      setError('Por favor, selecione datas de início e término válidas.')
+      return
+    }
+
+    if (end <= start) {
+      setError('A data de término deve ser posterior à data de início.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const now = new Date()
+      let status: PollStatus = 'em andamento'
+      if (start > now) {
+        status = 'não iniciado'
+      } else if (end < now) {
+        status = 'finalizado'
+      }
+
+      const pollData: Omit<Poll, 'id'> = {
+        title: title.trim(),
+        startDate: start,
+        endDate: end,
+        status,
+        options: filledOptions.map((text, idx) => ({
+          id: `opt-${idx + 1}-${Date.now()}`,
+          text,
+          votes: 0,
+        })),
+        createdBy: user.uid,
+        createdAt: now,
+      }
+
+      await createPoll(pollData)
+      navigate({ to: '/' })
+    } catch (err) {
+      console.error(err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Ocorreu um erro ao criar a enquete. Tente novamente.',
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      {/* Cabeçalho */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 pb-5">
-        <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-          <Link to="/" className="hover:text-primary-500 transition-colors">
-            Enquetes
-          </Link>
-          <span>/</span>
-          <span>Criar</span>
-        </div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-          Página: Criar nova enquete
+      {/* Título e Subtítulo Centralizados conforme Figma */}
+      <div className="text-center space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+          Criar enquete
         </h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Preencha os dados abaixo para configurar e publicar uma nova enquete.
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
+          Preencha os seguintes campos para criar a sua enquete
         </p>
       </div>
 
-      {/* Estrutura Base / Placeholder: Formulário de Criação */}
-      <form
-        onSubmit={(e) => e.preventDefault()}
-        className="p-6 sm:p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xs space-y-6"
-      >
-        {/* Campo 1: Título */}
-        <div className="space-y-2">
-          <label
-            htmlFor="poll-title"
-            className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200"
-          >
-            Título da Enquete
-          </label>
-          <input
-            id="poll-title"
-            type="text"
-            disabled
-            placeholder="Ex: Qual seu editor de código preferido?"
-            className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed text-sm focus:outline-hidden"
-          />
-          <span className="text-xs text-neutral-500 dark:text-neutral-400">
-            Estrutura base para o input do título da enquete.
-          </span>
-        </div>
-
-        {/* Campo 2: Opções de Resposta */}
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-            Opções de Voto
-          </label>
-          <div className="space-y-2.5">
-            <input
-              type="text"
-              disabled
-              placeholder="Opção 1 (Ex: VS Code)"
-              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed text-sm focus:outline-hidden"
-            />
-            <input
-              type="text"
-              disabled
-              placeholder="Opção 2 (Ex: Neovim)"
-              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed text-sm focus:outline-hidden"
-            />
+      {/* Alerta de Autenticação se não logado */}
+      {!user && (
+        <div className="p-5 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3 text-amber-800 dark:text-amber-300 text-sm">
+            <LogIn size={20} className="shrink-0" />
+            <span>
+              Identifique-se para publicar sua enquete em tempo real.
+            </span>
           </div>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Estrutura base para a lista dinâmica de opções de resposta.
-          </p>
-        </div>
-
-        {/* Campo 3: Datas / Período */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label
-              htmlFor="start-date"
-              className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => loginWithGoogle()}
             >
-              Data de Início
-            </label>
-            <input
-              id="start-date"
-              type="datetime-local"
-              disabled
-              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed text-sm focus:outline-hidden"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="end-date"
-              className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+              Entrar com Google
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => loginAnon()}
             >
-              Data de Encerramento
-            </label>
-            <input
-              id="end-date"
-              type="datetime-local"
-              disabled
-              className="w-full px-4 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 cursor-not-allowed text-sm focus:outline-hidden"
-            />
+              Anônimo
+            </Button>
           </div>
         </div>
+      )}
 
-        {/* Ações */}
-        <div className="pt-4 flex items-center justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800">
-          <Link
-            to="/"
-            className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
-          >
-            Cancelar
-          </Link>
-          <button
-            type="button"
-            disabled
-            className="px-5 py-2.5 text-sm font-medium text-white bg-primary-500 rounded-lg opacity-50 cursor-not-allowed shadow-xs"
-          >
-            Salvar Enquete
-          </button>
-        </div>
-      </form>
+      {/* Formulário Principal */}
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Mensagem de Erro */}
+          {error && (
+            <div className="p-3.5 rounded-md border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 flex items-center gap-2.5 text-xs sm:text-sm text-red-700 dark:text-red-400">
+              <AlertCircle size={18} className="shrink-0 text-red-500" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Campo: Título */}
+          <div className="space-y-1">
+            <Input
+              label="Titulo"
+              placeholder="Digite aqui a sua pergunta"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Seção: Opções de Resposta */}
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+              Opções de resposta
+            </label>
+
+            <div className="space-y-3">
+              {options.map((option, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    placeholder={`Opção ${index + 1}`}
+                    value={option}
+                    onChange={(e) => handleOptionChange(index, e.target.value)}
+                    required={index < 3}
+                  />
+
+                  {/* Botão para remover opção caso haja mais de 3 */}
+                  {options.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(index)}
+                      title="Remover opção"
+                      className="p-2.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Botão Adicionar Opção */}
+            <div className="pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddOption}
+                leftIcon={<PlusCircle size={16} />}
+              >
+                Adicionar opção
+              </Button>
+            </div>
+          </div>
+
+          {/* Seção: Datas (Início e Término) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-2">
+            <Input
+              label="Data de início"
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              rightIcon={<Calendar size={18} />}
+              required
+            />
+
+            <Input
+              label="Data de término"
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              rightIcon={<Calendar size={18} />}
+              required
+            />
+          </div>
+
+          {/* Botão de Envio Centralizado */}
+          <div className="pt-4 flex justify-center">
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
+              disabled={submitting || !user}
+              leftIcon={submitting ? <Loader2 size={18} className="animate-spin" /> : undefined}
+            >
+              {submitting ? 'Criando enquete...' : 'Criar enquete'}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   )
 }
