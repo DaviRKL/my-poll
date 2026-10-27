@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Card } from './ui/Card'
 import { cn } from '../utils/cn'
 
@@ -17,12 +18,15 @@ export const PollCard: React.FC<PollCardProps> = ({
   onClick,
   className,
 }) => {
+  const { t } = useTranslation()
+
   return (
     <Card
       onClick={onClick}
       className={cn(
         'p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 border border-neutral-100 dark:border-neutral-700/60',
-        onClick && 'cursor-pointer hover:shadow-lg hover:border-primary-500/40 hover:-translate-y-0.5',
+        onClick &&
+          'cursor-pointer hover:shadow-lg hover:border-primary-500/40 hover:-translate-y-0.5',
         className,
       )}
     >
@@ -32,10 +36,12 @@ export const PollCard: React.FC<PollCardProps> = ({
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-y-1 gap-x-4 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
         <span>
-          Inicio: <span className="font-medium">{startDate}</span>
+          {t('home.startDatePrefix', 'Inicio: ')}
+          <span className="font-medium">{startDate}</span>
         </span>
         <span>
-          Término: <span className="font-medium">{endDate}</span>
+          {t('home.endDatePrefix', 'Término: ')}
+          <span className="font-medium">{endDate}</span>
         </span>
       </div>
     </Card>

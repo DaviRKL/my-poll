@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { LogIn, Loader2, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from './ui/Card'
 import { Button } from './ui/Button'
@@ -12,13 +13,22 @@ export interface AuthPromptProps {
 }
 
 export const AuthPrompt: React.FC<AuthPromptProps> = ({
-  title = 'Inicie sessão para continuar',
-  description = 'É necessário identificar-se para poder criar enquetes e registrar votos em tempo real.',
+  title,
+  description,
   className,
 }) => {
+  const { t } = useTranslation()
   const { loginWithGoogle, loginAnon } = useAuth()
   const [loadingMethod, setLoadingMethod] = useState<'google' | 'anon' | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const resolvedTitle = title || t('auth.title', 'Inicie sessão para continuar')
+  const resolvedDescription =
+    description ||
+    t(
+      'auth.description',
+      'É necessário identificar-se para poder criar enquetes e registrar votos em tempo real.',
+    )
 
   const handleGoogleLogin = async () => {
     try {
@@ -27,7 +37,7 @@ export const AuthPrompt: React.FC<AuthPromptProps> = ({
       await loginWithGoogle()
     } catch (err) {
       console.error(err)
-      setError('Falha ao autenticar com Google. Tente novamente.')
+      setError(t('auth.googleError', 'Falha ao autenticar com Google. Tente novamente.'))
     } finally {
       setLoadingMethod(null)
     }
@@ -40,7 +50,7 @@ export const AuthPrompt: React.FC<AuthPromptProps> = ({
       await loginAnon()
     } catch (err) {
       console.error(err)
-      setError('Falha ao entrar anonimamente. Tente novamente.')
+      setError(t('auth.anonError', 'Falha ao entrar anonimamente. Tente novamente.'))
     } finally {
       setLoadingMethod(null)
     }
@@ -57,10 +67,10 @@ export const AuthPrompt: React.FC<AuthPromptProps> = ({
         {/* Título e Descrição */}
         <div className="space-y-2">
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
-            {title}
+            {resolvedTitle}
           </h2>
           <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
-            {description}
+            {resolvedDescription}
           </p>
         </div>
 
@@ -85,7 +95,9 @@ export const AuthPrompt: React.FC<AuthPromptProps> = ({
               ) : undefined
             }
           >
-            {loadingMethod === 'google' ? 'A conectar...' : 'Entrar com Google'}
+            {loadingMethod === 'google'
+              ? t('auth.connecting', 'A conectar...')
+              : t('auth.google', 'Entrar com Google')}
           </Button>
 
           <Button
@@ -99,7 +111,9 @@ export const AuthPrompt: React.FC<AuthPromptProps> = ({
               ) : undefined
             }
           >
-            {loadingMethod === 'anon' ? 'A entrar...' : 'Continuar anonimamente'}
+            {loadingMethod === 'anon'
+              ? t('auth.entering', 'A entrar...')
+              : t('auth.anonymous', 'Continuar anonimamente')}
           </Button>
         </div>
       </Card>

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '../utils/cn'
 
 export interface PollResultBarProps {
@@ -14,13 +15,14 @@ export const PollResultBar: React.FC<PollResultBarProps> = ({
   percentage,
   className,
 }) => {
-  // Garante que a porcentagem fique entre 0 e 100
+  const { t } = useTranslation()
   const safePercentage = Math.min(100, Math.max(0, percentage))
+  const voteUnit = votes === 1 ? t('common.vote', 'voto') : t('common.votes', 'votos')
 
   return (
     <div
       role="progressbar"
-      aria-label={`${label}: ${votes} votos (${safePercentage}%)`}
+      aria-label={`${label}: ${votes} ${voteUnit} (${safePercentage}%)`}
       aria-valuenow={safePercentage}
       aria-valuemin={0}
       aria-valuemax={100}
@@ -39,7 +41,7 @@ export const PollResultBar: React.FC<PollResultBarProps> = ({
       <div className="relative z-10 flex items-center justify-between w-full text-white font-medium text-sm sm:text-base pointer-events-none">
         <span className="truncate pr-4">{label}</span>
         <span className="shrink-0 text-white/95 text-xs sm:text-sm">
-          {votes} {votes === 1 ? 'voto' : 'votos'}
+          {votes} {voteUnit}
         </span>
       </div>
     </div>

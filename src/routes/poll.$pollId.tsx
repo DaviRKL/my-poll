@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { AlertCircle, Loader2, ArrowLeft } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { usePoll } from '../hooks/usePoll'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
@@ -17,6 +18,7 @@ function PollDetailsPage() {
   const { pollId } = Route.useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useTranslation()
   const { poll, loading, hasVoted, handleVote, isVotingActive } = usePoll(pollId)
 
   // Estado local para opção selecionada
@@ -38,7 +40,9 @@ function PollDetailsPage() {
     setVoteError(null)
 
     if (!selectedOptionId) {
-      setVoteError('Por favor, selecione uma opção antes de votar.')
+      setVoteError(
+        t('poll.selectOptionError', 'Por favor, selecione uma opção antes de votar.'),
+      )
       return
     }
 
@@ -46,7 +50,7 @@ function PollDetailsPage() {
 
     const optionIndex = poll.options.findIndex((o) => o.id === selectedOptionId)
     if (optionIndex === -1) {
-      setVoteError('Opção inválida selecionada.')
+      setVoteError(t('poll.invalidOptionError', 'Opção inválida selecionada.'))
       return
     }
 
@@ -58,7 +62,7 @@ function PollDetailsPage() {
       setVoteError(
         err instanceof Error
           ? err.message
-          : 'Ocorreu um erro ao registrar seu voto.',
+          : t('poll.voteErrorGeneric', 'Ocorreu um erro ao registrar seu voto.'),
       )
     } finally {
       setVoting(false)
@@ -70,7 +74,7 @@ function PollDetailsPage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-neutral-500 dark:text-neutral-400 space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <p className="text-sm">Carregando enquete...</p>
+        <p className="text-sm">{t('common.loadingPoll', 'Carregando enquete...')}</p>
       </div>
     )
   }
@@ -82,14 +86,17 @@ function PollDetailsPage() {
         <Card className="text-center space-y-4">
           <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
           <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
-            Enquete não encontrada
+            {t('poll.notFoundTitle', 'Enquete não encontrada')}
           </h2>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            A enquete solicitada não existe ou foi removida.
+            {t(
+              'poll.notFoundDesc',
+              'A enquete solicitada não existe ou foi removida.',
+            )}
           </p>
           <Link to="/">
             <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={16} />}>
-              Voltar para o início
+              {t('poll.backHome', 'Voltar para o início')}
             </Button>
           </Link>
         </Card>
@@ -103,8 +110,14 @@ function PollDetailsPage() {
     return (
       <div className="max-w-md mx-auto py-6">
         <AuthPrompt
-          title={`Votar em "${poll.title}"`}
-          description="É necessário identificar-se (com Google ou anonimamente) para registrar seu voto em tempo real e garantir a unicidade do voto."
+          title={t('poll.authPromptTitle', {
+            title: poll.title,
+            defaultValue: `Votar em "${poll.title}"`,
+          })}
+          description={t(
+            'poll.authPromptDesc',
+            'É necessário identificar-se (com Google ou anonimamente) para registrar seu voto em tempo real e garantir a unicidade do voto.',
+          )}
         />
       </div>
     )
@@ -123,7 +136,10 @@ function PollDetailsPage() {
                 {poll.title}
               </h1>
               <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Total de votos registrados: <span className="font-semibold text-neutral-700 dark:text-neutral-300">{totalVotes}</span>
+                {t('poll.totalVotes', 'Total de votos registrados: ')}
+                <span className="font-semibold text-neutral-700 dark:text-neutral-300">
+                  {totalVotes}
+                </span>
               </p>
             </div>
 
@@ -157,7 +173,7 @@ function PollDetailsPage() {
                   }
                 }}
               >
-                Voltar
+                {t('poll.backButton', 'Voltar')}
               </Button>
             </div>
           </div>
@@ -179,8 +195,13 @@ function PollDetailsPage() {
               </h1>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 {isVotingActive
-                  ? 'Escolha uma resposta'
-                  : `Votação fechada (${poll.status === 'não iniciado' ? `inicia em ${formatPollDate(poll.startDate)}` : 'encerrada'})`}
+                  ? t('poll.chooseAnswer', 'Escolha uma resposta')
+                  : poll.status === 'não iniciado'
+                    ? t('poll.closedStartsAt', {
+                        date: formatPollDate(poll.startDate),
+                        defaultValue: `Votação fechada (inicia em ${formatPollDate(poll.startDate)})`,
+                      })
+                    : t('poll.closedFinished', 'Votação fechada (encerrada)')}
               </p>
             </div>
 
@@ -223,7 +244,9 @@ function PollDetailsPage() {
                 disabled={!isVotingActive || !selectedOptionId || voting}
                 leftIcon={voting ? <Loader2 size={16} className="animate-spin" /> : undefined}
               >
-                {voting ? 'Votando...' : 'Votar'}
+                {voting
+                  ? t('poll.votingButton', 'Votando...')
+                  : t('poll.voteButton', 'Votar')}
               </Button>
 
               <Button
@@ -231,7 +254,7 @@ function PollDetailsPage() {
                 variant="secondary"
                 onClick={() => setShowResultsManual(true)}
               >
-                Resultados
+                {t('poll.resultsButton', 'Resultados')}
               </Button>
             </div>
           </form>

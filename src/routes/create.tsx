@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { PlusCircle, Trash2, Calendar, Loader2, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { createPoll } from '../services/pollService'
 import { Card } from '../components/ui/Card'
@@ -17,6 +18,7 @@ export const Route = createFileRoute('/create')({
 function CreatePollPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useTranslation()
 
   // Estados locais controlados do formulário
   const [title, setTitle] = useState('')
@@ -46,7 +48,12 @@ function CreatePollPage() {
 
   const handleRemoveOption = (indexToRemove: number) => {
     if (options.length <= 3) {
-      setError('A enquete deve ter no mínimo 3 opções (RN5).')
+      setError(
+        t(
+          'create.errorMinOptions',
+          'A enquete deve ter no mínimo 3 opções de resposta preenchidas (RN5).',
+        ),
+      )
       return
     }
     setOptions((prev) => prev.filter((_, idx) => idx !== indexToRemove))
@@ -59,18 +66,25 @@ function CreatePollPage() {
     setError(null)
 
     if (!user) {
-      setError('É necessário estar autenticado para criar uma enquete.')
+      setError(
+        t('create.errorAuthRequired', 'É necessário estar autenticado para criar uma enquete.'),
+      )
       return
     }
 
     if (!title.trim()) {
-      setError('Por favor, informe o título da enquete.')
+      setError(t('create.errorTitleRequired', 'Por favor, informe o título da enquete.'))
       return
     }
 
     const filledOptions = options.map((opt) => opt.trim()).filter((opt) => opt.length > 0)
     if (filledOptions.length < 3) {
-      setError('A enquete deve ter no mínimo 3 opções de resposta preenchidas (RN5).')
+      setError(
+        t(
+          'create.errorMinOptions',
+          'A enquete deve ter no mínimo 3 opções de resposta preenchidas (RN5).',
+        ),
+      )
       return
     }
 
@@ -78,12 +92,19 @@ function CreatePollPage() {
     const end = new Date(endDate)
 
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      setError('Por favor, selecione datas de início e término válidas.')
+      setError(
+        t('create.errorDatesInvalid', 'Por favor, selecione datas de início e término válidas.'),
+      )
       return
     }
 
     if (end <= start) {
-      setError('A data de término deve ser posterior à data de início.')
+      setError(
+        t(
+          'create.errorEndDateBeforeStart',
+          'A data de término deve ser posterior à data de início.',
+        ),
+      )
       return
     }
 
@@ -118,7 +139,10 @@ function CreatePollPage() {
       setError(
         err instanceof Error
           ? err.message
-          : 'Ocorreu um erro ao criar a enquete. Tente novamente.',
+          : t(
+              'create.errorGeneric',
+              'Ocorreu um erro ao criar a enquete. Tente novamente.',
+            ),
       )
     } finally {
       setSubmitting(false)
@@ -131,16 +155,22 @@ function CreatePollPage() {
       <div className="space-y-6">
         <div className="text-center space-y-1">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-            Criar enquete
+            {t('create.title', 'Criar enquete')}
           </h1>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Preencha os seguintes campos para criar a sua enquete
+            {t(
+              'create.subtitle',
+              'Preencha os seguintes campos para criar a sua enquete',
+            )}
           </p>
         </div>
 
         <AuthPrompt
-          title="Inicie sessão para criar uma enquete"
-          description="Para publicar enquetes em tempo real na plataforma, é necessário autenticar-se previamente."
+          title={t('create.authPromptTitle', 'Inicie sessão para criar uma enquete')}
+          description={t(
+            'create.authPromptDesc',
+            'Para publicar enquetes em tempo real na plataforma, é necessário autenticar-se previamente.',
+          )}
         />
       </div>
     )
@@ -152,10 +182,13 @@ function CreatePollPage() {
       {/* Título e Subtítulo Centralizados conforme Figma */}
       <div className="text-center space-y-1">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
-          Criar enquete
+          {t('create.title', 'Criar enquete')}
         </h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          Preencha os seguintes campos para criar a sua enquete
+          {t(
+            'create.subtitle',
+            'Preencha os seguintes campos para criar a sua enquete',
+          )}
         </p>
       </div>
 
@@ -173,8 +206,8 @@ function CreatePollPage() {
           {/* Campo: Título */}
           <div className="space-y-1">
             <Input
-              label="Titulo"
-              placeholder="Digite aqui a sua pergunta"
+              label={t('create.titleLabel', 'Titulo')}
+              placeholder={t('create.titlePlaceholder', 'Digite aqui a sua pergunta')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -184,14 +217,17 @@ function CreatePollPage() {
           {/* Seção: Opções de Resposta */}
           <div className="space-y-3">
             <label className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-              Opções de resposta
+              {t('create.optionsLabel', 'Opções de resposta')}
             </label>
 
             <div className="space-y-3">
               {options.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <Input
-                    placeholder={`Opção ${index + 1}`}
+                    placeholder={t('create.optionPlaceholder', {
+                      index: index + 1,
+                      defaultValue: `Opção ${index + 1}`,
+                    })}
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
                     required={index < 3}
@@ -202,7 +238,8 @@ function CreatePollPage() {
                     <button
                       type="button"
                       onClick={() => handleRemoveOption(index)}
-                      title="Remover opção"
+                      title={t('create.removeOptionAria', 'Remover opção')}
+                      aria-label={t('create.removeOptionAria', 'Remover opção')}
                       className="p-2.5 text-neutral-400 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
                     >
                       <Trash2 size={18} />
@@ -221,7 +258,7 @@ function CreatePollPage() {
                 onClick={handleAddOption}
                 leftIcon={<PlusCircle size={16} />}
               >
-                Adicionar opção
+                {t('create.addOption', 'Adicionar opção')}
               </Button>
             </div>
           </div>
@@ -229,7 +266,7 @@ function CreatePollPage() {
           {/* Seção: Datas (Início e Término) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-2">
             <Input
-              label="Data de início"
+              label={t('create.startDateLabel', 'Data de início')}
               type="datetime-local"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -238,7 +275,7 @@ function CreatePollPage() {
             />
 
             <Input
-              label="Data de término"
+              label={t('create.endDateLabel', 'Data de término')}
               type="datetime-local"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
@@ -257,7 +294,9 @@ function CreatePollPage() {
               disabled={submitting}
               leftIcon={submitting ? <Loader2 size={18} className="animate-spin" /> : undefined}
             >
-              {submitting ? 'Criando enquete...' : 'Criar enquete'}
+              {submitting
+                ? t('create.submittingButton', 'Criando enquete...')
+                : t('create.submitButton', 'Criar enquete')}
             </Button>
           </div>
         </form>
