@@ -5,6 +5,9 @@
 
 @theme {
   /* Cores primárias extraídas do Figma */
+  --color-primary-300: #7986cb;
   --color-primary-400: #5c6bc0;
   --color-primary-500: #3f51b5;
+  --color-primary-600: #303f9f;
+  --color-primary-700: #283593;
 }
