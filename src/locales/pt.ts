@@ -76,6 +76,9 @@ export const pt = {
     voteErrorGeneric: 'Ocorreu um erro ao registrar seu voto.',
     notFoundTitle: 'Enquete não encontrada',
     notFoundDesc: 'A enquete solicitada não existe ou foi removida.',
+    loadErrorTitle: 'Erro ao carregar enquete',
+    loadErrorDescription:
+      'Não foi possível carregar a enquete ou verificar seu voto.',
     backHome: 'Voltar para o início',
     authPromptTitle: 'Votar em "{{title}}"',
     authPromptDesc:

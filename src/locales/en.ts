@@ -74,6 +74,8 @@ export const en = {
     voteErrorGeneric: 'An error occurred while recording your vote.',
     notFoundTitle: 'Poll not found',
     notFoundDesc: 'The requested poll does not exist or has been removed.',
+    loadErrorTitle: 'Error loading poll',
+    loadErrorDescription: 'The poll could not be loaded or your vote verified.',
     backHome: 'Back to home',
     authPromptTitle: 'Vote in "{{title}}"',
     authPromptDesc:

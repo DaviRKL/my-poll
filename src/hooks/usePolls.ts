@@ -14,8 +14,10 @@ export const usePolls = (statusFilter: PollStatus | "" = "") => {
       setPolls(data);
       setError(null);
     } catch (err) {
-      setError("Erro ao buscar enquetes.");
       console.error(err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar enquetes.",
+      );
     } finally {
       setLoading(false);
     }

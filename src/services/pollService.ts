@@ -2,17 +2,21 @@ import {
   collection,
   doc,
   addDoc,
+  getDoc,
   getDocs,
   query,
   where,
   onSnapshot,
-  increment,
-  writeBatch,
+  runTransaction,
   Timestamp,
   orderBy,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import type { Poll, PollStatus } from "../types";
+import {
+  incrementPollOptionVotes,
+  normalizePollOptions,
+} from "../utils/normalizePollOptions";
 
 const POLLS_COLLECTION = "polls";
 const VOTES_COLLECTION = "userVotes";
@@ -49,32 +53,54 @@ export const getPolls = async (
   let q = query(pollsRef, orderBy("createdAt", "desc"));
 
   if (statusFilter !== "") {
-    q = query(
-      pollsRef,
-      where("status", "==", statusFilter),
-      orderBy("createdAt", "desc"),
-    );
+    q = query(pollsRef, where("status", "==", statusFilter));
   }
 
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({
+  const polls = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   })) as Poll[];
+
+  if (statusFilter !== "") {
+    polls.sort((a, b) => {
+      const aCreatedAt =
+        a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
+      const bCreatedAt =
+        b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
+      return bCreatedAt - aCreatedAt;
+    });
+  }
+
+  return polls;
 };
 
 // RF5: Escutar uma enquete específica em tempo real (Realtime Votes)
 export const listenToPoll = (
   pollId: string,
   callback: (poll: Poll) => void,
+  onError: (error: Error) => void,
 ) => {
   const pollRef = doc(db, POLLS_COLLECTION, pollId);
 
   return onSnapshot(pollRef, (docSnap) => {
     if (docSnap.exists()) {
-      callback({ id: docSnap.id, ...docSnap.data() } as Poll);
+      try {
+        const data = docSnap.data();
+        callback({
+          ...data,
+          id: docSnap.id,
+          options: normalizePollOptions(data.options),
+        } as Poll);
+      } catch (error) {
+        onError(
+          error instanceof Error
+            ? error
+            : new Error("Não foi possível interpretar os dados da enquete."),
+        );
+      }
     }
-  });
+  }, onError);
 };
 
 // Controle de Voto: Evita duplo voto e atualiza a contagem atomicamente
@@ -82,47 +108,44 @@ export const voteOnPoll = async (
   pollId: string,
   optionId: string,
   userId: string,
-  optionIndex: number,
 ): Promise<void> => {
   const voteRef = doc(db, VOTES_COLLECTION, `${pollId}_${userId}`);
   const pollRef = doc(db, POLLS_COLLECTION, pollId);
 
-  const batch = writeBatch(db);
+  await runTransaction(db, async (transaction) => {
+    const [pollSnapshot, voteSnapshot] = await Promise.all([
+      transaction.get(pollRef),
+      transaction.get(voteRef),
+    ]);
 
-  // 1. Registra que o usuário votou nesta enquete (usando merge ou set para falhar se já existir via Security Rules)
-  batch.set(voteRef, {
-    pollId,
-    optionId,
-    userId,
-    votedAt: Timestamp.now(),
+    if (!pollSnapshot.exists()) {
+      throw new Error("Enquete não encontrada.");
+    }
+
+    if (voteSnapshot.exists()) {
+      throw new Error("Você já votou nesta enquete.");
+    }
+
+    const pollOptions = normalizePollOptions(pollSnapshot.data().options);
+
+    transaction.update(pollRef, {
+      options: incrementPollOptionVotes(pollOptions, optionId),
+    });
+
+    transaction.set(voteRef, {
+      pollId,
+      optionId,
+      userId,
+      votedAt: Timestamp.now(),
+    });
   });
-
-  // 2. Incrementa atomicamente a opção específica dentro do array
-  // Como o Firestore não permite incrementar um campo de objeto dentro de um array diretamente,
-  // precisamos conhecer o índice da opção ou modelar as opções como um mapa (Object) em vez de Array.
-  // Modelagem como Array exige substituição completa ou uso de Mapas.
-
-  // Abordagem com estruturação em Mapa (Recomendada para realtime via dot notation):
-  // { [`options.${optionId}.votes`]: increment(1) }
-
-  batch.update(pollRef, {
-    [`options.${optionIndex}.votes`]: increment(1),
-  });
-
-  await batch.commit();
 };
 
 export const checkUserHasVoted = async (
   pollId: string,
   userId: string,
 ): Promise<boolean> => {
-
-  const voteSnap = await getDocs(
-    query(
-      collection(db, VOTES_COLLECTION),
-      where("pollId", "==", pollId),
-      where("userId", "==", userId),
-    ),
-  );
-  return !voteSnap.empty;
+  const voteRef = doc(db, VOTES_COLLECTION, `${pollId}_${userId}`);
+  const voteSnap = await getDoc(voteRef);
+  return voteSnap.exists();
 };

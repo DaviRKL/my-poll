@@ -19,7 +19,7 @@ function PollDetailsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useTranslation()
-  const { poll, loading, hasVoted, handleVote, isVotingActive } = usePoll(pollId)
+  const { poll, loading, error, hasVoted, handleVote, isVotingActive } = usePoll(pollId)
 
   // Estado local para opção selecionada
   const [selectedOptionId, setSelectedOptionId] = useState<string>('')
@@ -48,15 +48,14 @@ function PollDetailsPage() {
 
     if (!poll) return
 
-    const optionIndex = poll.options.findIndex((o) => o.id === selectedOptionId)
-    if (optionIndex === -1) {
+    if (!poll.options.some((option) => option.id === selectedOptionId)) {
       setVoteError(t('poll.invalidOptionError', 'Opção inválida selecionada.'))
       return
     }
 
     setVoting(true)
     try {
-      await handleVote(selectedOptionId, optionIndex)
+      await handleVote(selectedOptionId)
     } catch (err) {
       console.error(err)
       setVoteError(
@@ -75,6 +74,31 @@ function PollDetailsPage() {
       <div className="flex flex-col items-center justify-center py-24 text-neutral-500 dark:text-neutral-400 space-y-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         <p className="text-sm">{t('common.loadingPoll', 'Carregando enquete...')}</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto py-12">
+        <Card className="text-center space-y-4">
+          <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">
+            {t('poll.loadErrorTitle', 'Erro ao carregar enquete')}
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            {t(
+              'poll.loadErrorDescription',
+              'Não foi possível carregar a enquete ou verificar seu voto.',
+            )}
+          </p>
+          <p className="text-xs text-red-600 dark:text-red-400">{error.message}</p>
+          <Link to="/">
+            <Button variant="secondary" size="sm" leftIcon={<ArrowLeft size={16} />}>
+              {t('poll.backHome', 'Voltar para o início')}
+            </Button>
+          </Link>
+        </Card>
       </div>
     )
   }
