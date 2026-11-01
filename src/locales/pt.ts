@@ -19,6 +19,8 @@ export const pt = {
   nav: {
     polls: 'Enquetes',
     createPoll: 'Criar enquete',
+    openMenu: 'Abrir menu',
+    closeMenu: 'Fechar menu',
   },
   home: {
     title: 'Enquetes',

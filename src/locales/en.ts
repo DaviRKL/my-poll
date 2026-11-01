@@ -19,6 +19,8 @@ export const en = {
   nav: {
     polls: 'Polls',
     createPoll: 'Create poll',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
   },
   home: {
     title: 'Polls',
