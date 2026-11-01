@@ -17,6 +17,11 @@ import {
   incrementPollOptionVotes,
   normalizePollOptions,
 } from "../utils/normalizePollOptions";
+import {
+  getPollStatusAfterVote,
+  isPollVotingActive,
+  isPollStatus,
+} from "../utils/pollStatus";
 
 const POLLS_COLLECTION = "polls";
 const VOTES_COLLECTION = "userVotes";
@@ -126,10 +131,16 @@ export const voteOnPoll = async (
       throw new Error("Você já votou nesta enquete.");
     }
 
-    const pollOptions = normalizePollOptions(pollSnapshot.data().options);
+    const pollData = pollSnapshot.data();
+    if (!isPollStatus(pollData.status) || !isPollVotingActive(pollData.status)) {
+      throw new Error("Esta enquete não está ativa no momento.");
+    }
+
+    const pollOptions = normalizePollOptions(pollData.options);
 
     transaction.update(pollRef, {
       options: incrementPollOptionVotes(pollOptions, optionId),
+      status: getPollStatusAfterVote(pollData.status),
     });
 
     transaction.set(voteRef, {

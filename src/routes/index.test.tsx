@@ -28,6 +28,7 @@ vi.mock('react-i18next', () => ({
         'home.statusLabel': 'Status',
         'home.statusAll': 'Todas',
         'home.statusNotStarted': 'Não iniciado',
+        'home.statusStarted': 'Iniciado',
         'home.statusInProgress': 'Em andamento',
         'home.statusFinished': 'Finalizado',
         'home.emptyTitle': 'Nenhuma enquete encontrada.',
@@ -110,6 +111,7 @@ describe('PollsListPage', () => {
 
     expect(screen.getByRole('option', { name: 'Todas' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Não iniciado' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Iniciado' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Em andamento' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Finalizado' })).toBeInTheDocument()
   })
@@ -133,6 +135,17 @@ describe('PollsListPage', () => {
     await user.selectOptions(select, 'finalizado')
 
     expect(select.value).toBe('finalizado')
+  })
+
+  it('permite filtrar enquetes pelo status iniciado', async () => {
+    const user = userEvent.setup()
+    render(<PollsListPage />)
+
+    const select = screen.getByLabelText(/status/i) as HTMLSelectElement
+    await user.selectOptions(select, 'iniciado')
+
+    expect(select.value).toBe('iniciado')
+    expect(usePolls).toHaveBeenLastCalledWith('iniciado')
   })
 
   it('exibe mensagem de carregando quando loading for verdadeiro', () => {

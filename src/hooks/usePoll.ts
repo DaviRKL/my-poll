@@ -6,6 +6,7 @@ import {
 } from "../services/pollService";
 import type { Poll } from "../types";
 import { useAuth } from "./useAuth";
+import { isPollVotingActive } from "../utils/pollStatus";
 
 export const usePoll = (pollId: string) => {
   const { user } = useAuth();
@@ -61,8 +62,7 @@ export const usePoll = (pollId: string) => {
   }, [user, pollId]);
 
   // 3. RN6: A fonte da verdade para bloquear a UI é o status do Firestore
-  const isVotingActive =
-    poll?.status === "iniciado" || poll?.status === "em andamento";
+  const isVotingActive = isPollVotingActive(poll?.status);
 
   const handleVote = async (optionId: string) => {
     if (!user) throw new Error("Usuário não autenticado.");

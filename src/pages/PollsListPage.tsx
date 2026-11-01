@@ -18,6 +18,8 @@ export function PollsListPage() {
     switch (status) {
       case 'não iniciado':
         return t('home.statusNotStarted', 'Não iniciado')
+      case 'iniciado':
+        return t('home.statusStarted', 'Iniciado')
       case 'em andamento':
         return t('home.statusInProgress', 'Em andamento')
       case 'finalizado':
@@ -64,6 +66,9 @@ export function PollsListPage() {
               <option value="">{t('home.statusAll', 'Todas')}</option>
               <option value="não iniciado">
                 {t('home.statusNotStarted', 'Não iniciado')}
+              </option>
+              <option value="iniciado">
+                {t('home.statusStarted', 'Iniciado')}
               </option>
               <option value="em andamento">
                 {t('home.statusInProgress', 'Em andamento')}

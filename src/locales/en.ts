@@ -28,6 +28,7 @@ export const en = {
     statusLabel: 'Status',
     statusAll: 'All',
     statusNotStarted: 'Not started',
+    statusStarted: 'Started',
     statusInProgress: 'In progress',
     statusFinished: 'Finished',
     emptyTitle: 'No polls found.',

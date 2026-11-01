@@ -9,7 +9,8 @@ import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { AuthPrompt } from '../components/AuthPrompt'
 import { toDateTimeLocalString } from '../utils/formatDate'
-import type { Poll, PollStatus } from '../types'
+import type { Poll } from '../types'
+import { getInitialPollStatus } from '../utils/pollStatus'
 
 export const Route = createFileRoute('/create')({
   component: CreatePollPage,
@@ -111,12 +112,7 @@ function CreatePollPage() {
     setSubmitting(true)
     try {
       const now = new Date()
-      let status: PollStatus = 'em andamento'
-      if (start > now) {
-        status = 'não iniciado'
-      } else if (end < now) {
-        status = 'finalizado'
-      }
+      const status = getInitialPollStatus(start, end, now)
 
       const pollData: Omit<Poll, 'id'> = {
         title: title.trim(),

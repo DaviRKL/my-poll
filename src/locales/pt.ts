@@ -28,6 +28,7 @@ export const pt = {
     statusLabel: 'Status',
     statusAll: 'Todas',
     statusNotStarted: 'Não iniciado',
+    statusStarted: 'Iniciado',
     statusInProgress: 'Em andamento',
     statusFinished: 'Finalizado',
     emptyTitle: 'Nenhuma enquete encontrada.',
