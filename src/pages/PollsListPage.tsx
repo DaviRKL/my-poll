@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from '@tanstack/react-router'
 import { ChevronDown, PlusCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -7,8 +7,10 @@ import { PollCard } from '../components/PollCard'
 import { Button } from '../components/ui/Button'
 import { SearchBar } from '../components/ui/SearchBar'
 import { SortDropdown, type SortOrder } from '../components/ui/SortDropdown'
+import { Pagination } from '../components/ui/Pagination'
 import { formatPollDate } from '../utils/formatDate'
 import { filterAndSortPolls } from '../utils/filterAndSortPolls'
+import { usePagination } from '../hooks/usePagination'
 import type { PollStatus } from '../types'
 
 export function PollsListPage() {
@@ -22,6 +24,12 @@ export function PollsListPage() {
     () => filterAndSortPolls(polls, searchTerm, sortOrder, selectedStatus),
     [polls, searchTerm, sortOrder, selectedStatus],
   )
+  const { paginatedItems, currentPage, totalPages, goToPage, resetPage } =
+    usePagination(visiblePolls, 10)
+
+  useEffect(() => {
+    resetPage()
+  }, [searchTerm, selectedStatus, sortOrder, resetPage])
 
   const getStatusLabel = (status: PollStatus | '') => {
     switch (status) {
@@ -160,7 +168,7 @@ export function PollsListPage() {
       {/* Grid Responsivo de Cards de Enquetes */}
       {!loading && !error && visiblePolls.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {visiblePolls.map((poll) => (
+          {paginatedItems.map((poll) => (
             <PollCard
               key={poll.id}
               title={poll.title}
@@ -177,6 +185,13 @@ export function PollsListPage() {
             />
           ))}
         </div>
+      )}
+      {!loading && !error && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+        />
       )}
     </div>
   )

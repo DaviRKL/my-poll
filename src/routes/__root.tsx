@@ -91,6 +91,21 @@ function RootComponent() {
                   {t('nav.myPolls', 'Minhas Enquetes')}
                 </Link>
               )}
+              {user && (
+                <Link
+                  to="/my-votes"
+                  activeProps={{
+                    className:
+                      'font-semibold text-neutral-900 dark:text-white border-b-2 border-primary-500 pb-1',
+                  }}
+                  inactiveProps={{
+                    className:
+                      'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white pb-1 border-b-2 border-transparent transition-colors',
+                  }}
+                >
+                  {t('nav.myVotes', 'Meus Votos')}
+                </Link>
+              )}
             </nav>
             <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-4 border-l border-neutral-200 dark:border-neutral-700">
               <LanguageSwitcher />
@@ -169,6 +184,22 @@ function RootComponent() {
                   }}
                 >
                   {t('nav.myPolls', 'Minhas Enquetes')}
+                </Link>
+              )}
+              {user && (
+                <Link
+                  to="/my-votes"
+                  onClick={closeMobileMenu}
+                  activeProps={{
+                    className:
+                      'rounded-lg px-3 py-2.5 font-semibold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-700/50 transition-colors',
+                  }}
+                  inactiveProps={{
+                    className:
+                      'rounded-lg px-3 py-2.5 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors',
+                  }}
+                >
+                  {t('nav.myVotes', 'Meus Votos')}
                 </Link>
               )}
             </nav>

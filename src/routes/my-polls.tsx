@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { AlertCircle, ChevronDown, Loader2, PlusCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -7,8 +7,10 @@ import { Button } from '../components/ui/Button'
 import { PollCard } from '../components/PollCard'
 import { SearchBar } from '../components/ui/SearchBar'
 import { SortDropdown, type SortOrder } from '../components/ui/SortDropdown'
+import { Pagination } from '../components/ui/Pagination'
 import { useAuth } from '../hooks/useAuth'
 import { useMyPolls } from '../hooks/useMyPolls'
+import { usePagination } from '../hooks/usePagination'
 import { formatPollDate } from '../utils/formatDate'
 import { filterAndSortPolls } from '../utils/filterAndSortPolls'
 import type { PollStatus } from '../types'
@@ -29,6 +31,12 @@ function MyPollsPage() {
     () => filterAndSortPolls(polls, searchTerm, sortOrder, selectedStatus),
     [polls, searchTerm, sortOrder, selectedStatus],
   )
+  const { paginatedItems, currentPage, totalPages, goToPage, resetPage } =
+    usePagination(visiblePolls, 10)
+
+  useEffect(() => {
+    resetPage()
+  }, [searchTerm, selectedStatus, sortOrder, resetPage])
 
   if (authLoading) {
     return (
@@ -140,7 +148,7 @@ function MyPollsPage() {
 
       {!loading && !error && visiblePolls.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {visiblePolls.map((poll) => (
+          {paginatedItems.map((poll) => (
             <PollCard
               key={poll.id}
               title={poll.title}
@@ -157,6 +165,13 @@ function MyPollsPage() {
             />
           ))}
         </div>
+      )}
+      {!loading && !error && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+        />
       )}
     </div>
   )

@@ -20,6 +20,7 @@ export const pt = {
     polls: 'Enquetes',
     createPoll: 'Criar enquete',
     myPolls: 'Minhas Enquetes',
+    myVotes: 'Meus Votos',
     openMenu: 'Abrir menu',
     closeMenu: 'Fechar menu',
   },
@@ -33,6 +34,7 @@ export const pt = {
     statusInProgress: 'Em andamento',
     statusFinished: 'Finalizado',
     noPollsCreated: 'Você ainda não possui enquetes criadas',
+    noVotesFound: 'Você ainda não participou de nenhuma enquete.',
     searchEmpty: 'Nenhuma enquete corresponde aos filtros selecionados.',
     emptyTitle: 'Nenhuma enquete encontrada.',
     emptyFiltered:
@@ -47,6 +49,14 @@ export const pt = {
     sortLabel: 'Ordenar por',
     newest: 'Mais recentes',
     oldest: 'Mais antigas',
+    sortVotedAtDesc: 'Votos mais recentes',
+    sortVotedAtAsc: 'Votos mais antigos',
+  },
+  pagination: {
+    previous: 'Anterior',
+    next: 'Próximo',
+    pageOf: 'Página {{current}} de {{total}}',
+    pageNumber: 'Página {{page}}',
   },
   create: {
     title: 'Criar enquete',
@@ -106,6 +116,9 @@ export const pt = {
     myPollsTitle: 'Entre para ver suas enquetes',
     myPollsDescription:
       'Faça login para visualizar as enquetes que você criou.',
+    myVotesTitle: 'Entre para ver seus votos',
+    myVotesDescription:
+      'Faça login para visualizar as enquetes em que você votou.',
     google: 'Entrar com Google',
     connecting: 'A conectar...',
     anonymous: 'Continuar anonimamente',

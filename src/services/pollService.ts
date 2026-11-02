@@ -26,6 +26,8 @@ import {
 const POLLS_COLLECTION = "polls";
 const VOTES_COLLECTION = "userVotes";
 
+export type VotedPoll = Poll & { votedAt: Timestamp | Date };
+
 // RF1 e RN5: Criar enquete validando mínimo de 3 opções
 export const createPoll = async (
   pollData: Omit<Poll, "id">,
@@ -96,6 +98,42 @@ export const getUserPolls = async (userId: string): Promise<Poll[]> => {
       b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
     return bCreatedAt - aCreatedAt;
   });
+};
+
+export const getUserVotedPolls = async (
+  userId: string,
+): Promise<VotedPoll[]> => {
+  const votesSnapshot = await getDocs(
+    query(collection(db, VOTES_COLLECTION), where("userId", "==", userId)),
+  );
+  const userVotes = votesSnapshot.docs.map((voteDoc) => {
+    const data = voteDoc.data();
+    if (
+      typeof data.pollId !== "string" ||
+      (!(data.votedAt instanceof Timestamp) && !(data.votedAt instanceof Date))
+    ) {
+      throw new Error(`O registro de voto ${voteDoc.id} possui dados inválidos.`);
+    }
+
+    return { pollId: data.pollId, votedAt: data.votedAt };
+  });
+
+  const votedPolls = await Promise.all(
+    userVotes.map(async ({ pollId, votedAt }) => {
+      const pollSnapshot = await getDoc(doc(db, POLLS_COLLECTION, pollId));
+      if (!pollSnapshot.exists()) {
+        return null;
+      }
+
+      return {
+        id: pollSnapshot.id,
+        ...pollSnapshot.data(),
+        votedAt,
+      } as VotedPoll;
+    }),
+  );
+
+  return votedPolls.filter((poll): poll is VotedPoll => poll !== null);
 };
 
 export const updatePollStatus = async (
