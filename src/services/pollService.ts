@@ -11,7 +11,7 @@ import {
   Timestamp,
   orderBy,
 } from "firebase/firestore";
-import { db } from "../config/firebase";
+import { auth, db } from "../config/firebase";
 import type { Poll, PollStatus } from "../types";
 import {
   incrementPollOptionVotes,
@@ -78,6 +78,54 @@ export const getPolls = async (
   }
 
   return polls;
+};
+
+export const getUserPolls = async (userId: string): Promise<Poll[]> => {
+  const snapshot = await getDocs(
+    query(collection(db, POLLS_COLLECTION), where("createdBy", "==", userId)),
+  );
+  const polls = snapshot.docs.map((pollDoc) => ({
+    id: pollDoc.id,
+    ...pollDoc.data(),
+  })) as Poll[];
+
+  return polls.sort((a, b) => {
+    const aCreatedAt =
+      a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
+    const bCreatedAt =
+      b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
+    return bCreatedAt - aCreatedAt;
+  });
+};
+
+export const updatePollStatus = async (
+  pollId: string,
+  newStatus: PollStatus,
+): Promise<void> => {
+  if (!isPollStatus(newStatus)) {
+    throw new Error("Status inválido para a enquete.");
+  }
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error("É necessário estar autenticado para alterar o status.");
+  }
+
+  const pollRef = doc(db, POLLS_COLLECTION, pollId);
+
+  await runTransaction(db, async (transaction) => {
+    const pollSnapshot = await transaction.get(pollRef);
+
+    if (!pollSnapshot.exists()) {
+      throw new Error("Enquete não encontrada.");
+    }
+
+    if (pollSnapshot.data().createdBy !== currentUser.uid) {
+      throw new Error("Somente o criador pode alterar o status desta enquete.");
+    }
+
+    transaction.update(pollRef, { status: newStatus });
+  });
 };
 
 // RF5: Escutar uma enquete específica em tempo real (Realtime Votes)

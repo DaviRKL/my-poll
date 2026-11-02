@@ -41,13 +41,13 @@ function RootComponent() {
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
             onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="md:hidden p-2 -mr-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/50"
+            className="lg:hidden p-2 -mr-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/50"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           {/* Navegação completa para desktop */}
-          <div className="hidden md:flex items-center gap-3 sm:gap-6">
+          <div className="hidden lg:flex items-center gap-3 sm:gap-6">
             <nav className="flex items-center gap-3 sm:gap-6 text-sm">
               <Link
                 to="/create"
@@ -76,6 +76,21 @@ function RootComponent() {
               >
                 {t('nav.polls', 'Enquetes')}
               </Link>
+              {user && (
+                <Link
+                  to="/my-polls"
+                  activeProps={{
+                    className:
+                      'font-semibold text-neutral-900 dark:text-white border-b-2 border-primary-500 pb-1',
+                  }}
+                  inactiveProps={{
+                    className:
+                      'text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white pb-1 border-b-2 border-transparent transition-colors',
+                  }}
+                >
+                  {t('nav.myPolls', 'Minhas Enquetes')}
+                </Link>
+              )}
             </nav>
             <div className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-4 border-l border-neutral-200 dark:border-neutral-700">
               <LanguageSwitcher />
@@ -108,7 +123,7 @@ function RootComponent() {
         {isMobileMenuOpen && (
           <div
             id="mobile-navigation"
-            className="md:hidden border-t border-neutral-200 dark:border-neutral-700/60 px-4 py-4 sm:px-6"
+            className="lg:hidden border-t border-neutral-200 dark:border-neutral-700/60 px-4 py-4 sm:px-6"
           >
             <nav className="flex flex-col gap-1 text-sm">
               <Link
@@ -140,6 +155,22 @@ function RootComponent() {
               >
                 {t('nav.polls', 'Enquetes')}
               </Link>
+              {user && (
+                <Link
+                  to="/my-polls"
+                  onClick={closeMobileMenu}
+                  activeProps={{
+                    className:
+                      'rounded-lg px-3 py-2.5 font-semibold text-neutral-900 dark:text-white bg-neutral-100 dark:bg-neutral-700/50 transition-colors',
+                  }}
+                  inactiveProps={{
+                    className:
+                      'rounded-lg px-3 py-2.5 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700/50 transition-colors',
+                  }}
+                >
+                  {t('nav.myPolls', 'Minhas Enquetes')}
+                </Link>
+              )}
             </nav>
 
             <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-3">

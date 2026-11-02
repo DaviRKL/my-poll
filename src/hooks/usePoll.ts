@@ -3,8 +3,9 @@ import {
   listenToPoll,
   voteOnPoll,
   checkUserHasVoted,
+  updatePollStatus,
 } from "../services/pollService";
-import type { Poll } from "../types";
+import type { Poll, PollStatus } from "../types";
 import { useAuth } from "./useAuth";
 import { isPollVotingActive } from "../utils/pollStatus";
 
@@ -63,6 +64,7 @@ export const usePoll = (pollId: string) => {
 
   // 3. RN6: A fonte da verdade para bloquear a UI é o status do Firestore
   const isVotingActive = isPollVotingActive(poll?.status);
+  const isOwner = user?.uid === poll?.createdBy;
 
   const handleVote = async (optionId: string) => {
     if (!user) throw new Error("Usuário não autenticado.");
@@ -81,12 +83,25 @@ export const usePoll = (pollId: string) => {
     setHasVoted(true);
   };
 
+  const changeStatus = async (newStatus: PollStatus) => {
+    if (!user || !poll || !isOwner) {
+      throw new Error("Somente o criador pode alterar o status desta enquete.");
+    }
+
+    await updatePollStatus(pollId, newStatus);
+    setPoll((currentPoll) =>
+      currentPoll ? { ...currentPoll, status: newStatus } : currentPoll,
+    );
+  };
+
   return {
     poll,
     loading,
     error: pollError ?? (user ? voteStatusError : null),
     hasVoted,
     handleVote,
+    changeStatus,
+    isOwner,
     isVotingActive, // Use isso no 'disabled' do seu <button> e dos seus <input type="radio">
   };
 };

@@ -19,6 +19,7 @@ export const pt = {
   nav: {
     polls: 'Enquetes',
     createPoll: 'Criar enquete',
+    myPolls: 'Minhas Enquetes',
     openMenu: 'Abrir menu',
     closeMenu: 'Fechar menu',
   },
@@ -31,6 +32,7 @@ export const pt = {
     statusStarted: 'Iniciado',
     statusInProgress: 'Em andamento',
     statusFinished: 'Finalizado',
+    noPollsCreated: 'Você ainda não possui enquetes criadas',
     emptyTitle: 'Nenhuma enquete encontrada.',
     emptyFiltered:
       'Não há enquetes com o status "{{status}}". Altere o filtro ou crie uma nova enquete.',
@@ -82,6 +84,9 @@ export const pt = {
     loadErrorTitle: 'Erro ao carregar enquete',
     loadErrorDescription:
       'Não foi possível carregar a enquete ou verificar seu voto.',
+    changeStatus: 'Alterar status',
+    statusUpdated: 'Status alterado com sucesso',
+    statusUpdateError: 'Não foi possível alterar o status.',
     backHome: 'Voltar para o início',
     authPromptTitle: 'Votar em "{{title}}"',
     authPromptDesc:
@@ -91,6 +96,9 @@ export const pt = {
     title: 'Inicie sessão para continuar',
     description:
       'É necessário identificar-se para poder criar enquetes e registrar votos em tempo real.',
+    myPollsTitle: 'Entre para ver suas enquetes',
+    myPollsDescription:
+      'Faça login para visualizar as enquetes que você criou.',
     google: 'Entrar com Google',
     connecting: 'A conectar...',
     anonymous: 'Continuar anonimamente',

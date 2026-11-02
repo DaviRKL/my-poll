@@ -19,6 +19,7 @@ export const en = {
   nav: {
     polls: 'Polls',
     createPoll: 'Create poll',
+    myPolls: 'My Polls',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
   },
@@ -31,6 +32,7 @@ export const en = {
     statusStarted: 'Started',
     statusInProgress: 'In progress',
     statusFinished: 'Finished',
+    noPollsCreated: 'You have not created any polls yet',
     emptyTitle: 'No polls found.',
     emptyFiltered:
       'There are no polls with status "{{status}}". Change the filter or create a new poll.',
@@ -79,6 +81,9 @@ export const en = {
     notFoundDesc: 'The requested poll does not exist or has been removed.',
     loadErrorTitle: 'Error loading poll',
     loadErrorDescription: 'The poll could not be loaded or your vote verified.',
+    changeStatus: 'Change status',
+    statusUpdated: 'Status updated successfully',
+    statusUpdateError: 'Could not update the status.',
     backHome: 'Back to home',
     authPromptTitle: 'Vote in "{{title}}"',
     authPromptDesc:
@@ -88,6 +93,8 @@ export const en = {
     title: 'Sign in to continue',
     description:
       'You must identify yourself to create polls and record votes in real time.',
+    myPollsTitle: 'Sign in to view your polls',
+    myPollsDescription: 'Sign in to see the polls you created.',
     google: 'Sign in with Google',
     connecting: 'Connecting...',
     anonymous: 'Continue anonymously',

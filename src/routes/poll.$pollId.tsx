@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button'
 import { PollResultBar } from '../components/PollResultBar'
 import { AuthPrompt } from '../components/AuthPrompt'
 import { formatPollDate } from '../utils/formatDate'
+import type { PollStatus } from '../types'
 
 export const Route = createFileRoute('/poll/$pollId')({
   component: PollDetailsPage,
@@ -19,7 +20,16 @@ function PollDetailsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useTranslation()
-  const { poll, loading, error, hasVoted, handleVote, isVotingActive } = usePoll(pollId)
+  const {
+    poll,
+    loading,
+    error,
+    hasVoted,
+    handleVote,
+    changeStatus,
+    isOwner,
+    isVotingActive,
+  } = usePoll(pollId)
 
   // Estado local para opção selecionada
   const [selectedOptionId, setSelectedOptionId] = useState<string>('')
@@ -27,6 +37,11 @@ function PollDetailsPage() {
   const [showResultsManual, setShowResultsManual] = useState(false)
   const [voting, setVoting] = useState(false)
   const [voteError, setVoteError] = useState<string | null>(null)
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [statusFeedback, setStatusFeedback] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   // Deve exibir os resultados se o utilizador já votou OU se clicou no botão "Resultados"
   const isViewingResults = hasVoted || showResultsManual
@@ -34,6 +49,29 @@ function PollDetailsPage() {
   // Cálculo de votos totais para percentuais
   const totalVotes =
     poll?.options?.reduce((acc, opt) => acc + (opt.votes || 0), 0) ?? 0
+
+  const handleStatusChange = async (newStatus: PollStatus) => {
+    setStatusFeedback(null)
+    setStatusSaving(true)
+    try {
+      await changeStatus(newStatus)
+      setStatusFeedback({
+        type: 'success',
+        message: t('poll.statusUpdated', 'Status alterado com sucesso'),
+      })
+    } catch (statusError) {
+      console.error(statusError)
+      setStatusFeedback({
+        type: 'error',
+        message:
+          statusError instanceof Error
+            ? statusError.message
+            : t('poll.statusUpdateError', 'Não foi possível alterar o status.'),
+      })
+    } finally {
+      setStatusSaving(false)
+    }
+  }
 
   const handleVoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,6 +190,50 @@ function PollDetailsPage() {
     <div className="max-w-lg mx-auto py-6">
       {/* VOTAÇÃO OU RESULTADOS BASEADOS NO DESIGN FIGMA */}
       <Card className="shadow-lg">
+        {isOwner && (
+          <div className="mb-6 rounded-lg border border-neutral-200 dark:border-neutral-700 p-4">
+            <label
+              htmlFor="poll-status"
+              className="block text-sm font-semibold text-neutral-800 dark:text-neutral-200"
+            >
+              {t('poll.changeStatus', 'Alterar status')}
+            </label>
+            <select
+              id="poll-status"
+              value={poll.status}
+              disabled={statusSaving}
+              onChange={(event) =>
+                void handleStatusChange(event.target.value as PollStatus)
+              }
+              className="mt-2 w-full rounded-md border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-hidden focus:ring-2 focus:ring-primary-500/30 disabled:opacity-60"
+            >
+              <option value="não iniciado">
+                {t('home.statusNotStarted', 'Não iniciado')}
+              </option>
+              <option value="iniciado">
+                {t('home.statusStarted', 'Iniciado')}
+              </option>
+              <option value="em andamento">
+                {t('home.statusInProgress', 'Em andamento')}
+              </option>
+              <option value="finalizado">
+                {t('home.statusFinished', 'Finalizado')}
+              </option>
+            </select>
+            {statusFeedback && (
+              <p
+                role={statusFeedback.type === 'error' ? 'alert' : 'status'}
+                className={`mt-2 text-xs ${
+                  statusFeedback.type === 'success'
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-red-700 dark:text-red-400'
+                }`}
+              >
+                {statusFeedback.message}
+              </p>
+            )}
+          </div>
+        )}
         {/* ================= TELA DE RESULTADOS (Poll Result.png) ================= */}
         {isViewingResults ? (
           <div className="space-y-6">
