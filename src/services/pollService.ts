@@ -10,6 +10,7 @@ import {
   runTransaction,
   Timestamp,
   orderBy,
+  updateDoc,
 } from "firebase/firestore";
 import { auth, db } from "../config/firebase";
 import type { Poll, PollStatus } from "../types";
@@ -18,7 +19,6 @@ import {
   normalizePollOptions,
 } from "../utils/normalizePollOptions";
 import {
-  getPollStatusAfterVote,
   isPollVotingActive,
   isPollStatus,
 } from "../utils/pollStatus";
@@ -27,6 +27,56 @@ const POLLS_COLLECTION = "polls";
 const VOTES_COLLECTION = "userVotes";
 
 export type VotedPoll = Poll & { votedAt: Timestamp | Date };
+
+const lazyExpirationWrites = new Set<string>();
+
+async function checkAndApplyLazyExpiration(poll: Poll): Promise<Poll> {
+  let endDate: Date;
+  try {
+    endDate =
+      poll.endDate instanceof Date ? poll.endDate : poll.endDate.toDate();
+  } catch (error) {
+    console.error(
+      `Data de término inválida na enquete ${poll.id ?? "(sem ID)"}.`,
+      error,
+    );
+    return poll;
+  }
+
+  if (!Number.isFinite(endDate.getTime())) {
+    console.error(`Data de término inválida na enquete ${poll.id ?? "(sem ID)"}.`);
+    return poll;
+  }
+
+  if (endDate.getTime() >= Date.now() || poll.status === "finalizado") {
+    return poll;
+  }
+
+  const expiredPoll = { ...poll, status: "finalizado" as const };
+  if (!poll.id) {
+    console.error("Não foi possível expirar uma enquete sem ID.", poll);
+    return expiredPoll;
+  }
+
+  const pollId = poll.id;
+  if (!lazyExpirationWrites.has(pollId)) {
+    lazyExpirationWrites.add(pollId);
+    void Promise.resolve()
+      .then(() =>
+        updateDoc(doc(db, POLLS_COLLECTION, pollId), {
+          status: "finalizado",
+        }),
+      )
+      .catch((error: unknown) => {
+        console.error(`Falha ao finalizar a enquete expirada ${pollId}.`, error);
+      })
+      .finally(() => {
+        lazyExpirationWrites.delete(pollId);
+      });
+  }
+
+  return expiredPoll;
+}
 
 // RF1 e RN5: Criar enquete validando mínimo de 3 opções
 export const createPoll = async (
@@ -64,22 +114,30 @@ export const getPolls = async (
   }
 
   const snapshot = await getDocs(q);
-  const polls = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
+  const polls = snapshot.docs.map((pollDoc) => ({
+    id: pollDoc.id,
+    ...pollDoc.data(),
   })) as Poll[];
 
+  const updatedPolls = await Promise.all(polls.map(checkAndApplyLazyExpiration));
+
   if (statusFilter !== "") {
-    polls.sort((a, b) => {
-      const aCreatedAt =
-        a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
-      const bCreatedAt =
-        b.createdAt instanceof Date ? b.createdAt.getTime() : b.createdAt.toMillis();
-      return bCreatedAt - aCreatedAt;
-    });
+    return updatedPolls
+      .filter((poll) => poll.status === statusFilter)
+      .sort((a, b) => {
+        const aCreatedAt =
+          a.createdAt instanceof Date
+            ? a.createdAt.getTime()
+            : a.createdAt.toMillis();
+        const bCreatedAt =
+          b.createdAt instanceof Date
+            ? b.createdAt.getTime()
+            : b.createdAt.toMillis();
+        return bCreatedAt - aCreatedAt;
+      });
   }
 
-  return polls;
+  return updatedPolls;
 };
 
 export const getUserPolls = async (userId: string): Promise<Poll[]> => {
@@ -91,7 +149,9 @@ export const getUserPolls = async (userId: string): Promise<Poll[]> => {
     ...pollDoc.data(),
   })) as Poll[];
 
-  return polls.sort((a, b) => {
+  const updatedPolls = await Promise.all(polls.map(checkAndApplyLazyExpiration));
+
+  return updatedPolls.sort((a, b) => {
     const aCreatedAt =
       a.createdAt instanceof Date ? a.createdAt.getTime() : a.createdAt.toMillis();
     const bCreatedAt =
@@ -125,11 +185,12 @@ export const getUserVotedPolls = async (
         return null;
       }
 
-      return {
+      const poll = {
         id: pollSnapshot.id,
         ...pollSnapshot.data(),
         votedAt,
       } as VotedPoll;
+      return checkAndApplyLazyExpiration(poll);
     }),
   );
 
@@ -178,11 +239,20 @@ export const listenToPoll = (
     if (docSnap.exists()) {
       try {
         const data = docSnap.data();
-        callback({
+        const poll = {
           ...data,
           id: docSnap.id,
           options: normalizePollOptions(data.options),
-        } as Poll);
+        } as Poll;
+        void checkAndApplyLazyExpiration(poll)
+          .then(callback)
+          .catch((error: unknown) => {
+            const pollError =
+              error instanceof Error
+                ? error
+                : new Error("Não foi possível atualizar o status da enquete.");
+            onError(pollError);
+          });
       } catch (error) {
         onError(
           error instanceof Error
@@ -226,7 +296,8 @@ export const voteOnPoll = async (
 
     transaction.update(pollRef, {
       options: incrementPollOptionVotes(pollOptions, optionId),
-      status: getPollStatusAfterVote(pollData.status),
+      status:
+        pollData.status === "iniciado" ? "em andamento" : pollData.status,
     });
 
     transaction.set(voteRef, {
