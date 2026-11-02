@@ -1,5 +1,18 @@
 # React + TypeScript + Vite
 
+## Deploy no Firebase Hosting
+
+Configure as variáveis `VITE_FIREBASE_*` no arquivo `.env` para o projeto Firebase e autentique a Firebase CLI:
+
+```sh
+firebase login
+npm run deploy
+```
+
+O projeto Firebase padrão é definido em `.firebaserc`. O comando de deploy executa o build de produção e publica a pasta `dist` no Firebase Hosting. Rotas da aplicação são reescritas para `/index.html`, enquanto os assets versionados recebem cache de longa duração.
+
+Para disponibilizar a Firebase CLI, instale o Firebase CLI seguindo a [documentação oficial](https://firebase.google.com/docs/cli).
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

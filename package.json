@@ -11,6 +11,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "deploy": "npm run build && firebase deploy --only hosting",
     "seed": "tsx --env-file=.env scripts/seed.ts",
     "fix-status": "tsx --env-file=.env scripts/fix-inconsistent-statuses.ts"
   },
