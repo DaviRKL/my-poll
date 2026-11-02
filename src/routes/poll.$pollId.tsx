@@ -15,7 +15,7 @@ export const Route = createFileRoute('/poll/$pollId')({
   component: PollDetailsPage,
 })
 
-function PollDetailsPage() {
+export function PollDetailsPage() {
   const { pollId } = Route.useParams()
   const navigate = useNavigate()
   const { user } = useAuth()

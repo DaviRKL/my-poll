@@ -3,19 +3,19 @@ import { listenToPoll, updatePollStatus } from '../services/pollService'
 import { usePoll } from './usePoll'
 import type { Poll } from '../types'
 
-const mocks = vi.hoisted(() => ({
+const mockAuthState = {
   user: { uid: 'poll-owner' } as { uid: string } | null,
+}
+
+jest.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: mockAuthState.user }),
 }))
 
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: mocks.user }),
-}))
-
-vi.mock('../services/pollService', () => ({
-  listenToPoll: vi.fn(),
-  voteOnPoll: vi.fn(),
-  checkUserHasVoted: vi.fn().mockResolvedValue(false),
-  updatePollStatus: vi.fn().mockResolvedValue(undefined),
+jest.mock('../services/pollService', () => ({
+  listenToPoll: jest.fn(),
+  voteOnPoll: jest.fn(),
+  checkUserHasVoted: jest.fn().mockResolvedValue(false),
+  updatePollStatus: jest.fn().mockResolvedValue(undefined),
 }))
 
 describe('usePoll ownership', () => {
@@ -31,13 +31,13 @@ describe('usePoll ownership', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mocks.user = { uid: 'poll-owner' }
-    vi.mocked(listenToPoll).mockImplementation((_pollId, onPoll) => {
+    jest.clearAllMocks()
+    mockAuthState.user = { uid: 'poll-owner' }
+    jest.mocked(listenToPoll).mockImplementation((_pollId, onPoll) => {
       onPoll(poll)
-      return vi.fn()
+      return jest.fn()
     })
-    vi.mocked(updatePollStatus).mockResolvedValue(undefined)
+    jest.mocked(updatePollStatus).mockResolvedValue(undefined)
   })
 
   it('identifies the creator and persists their status change', async () => {
@@ -53,7 +53,7 @@ describe('usePoll ownership', () => {
   })
 
   it('does not allow another user to change the poll status', async () => {
-    mocks.user = { uid: 'another-user' }
+    mockAuthState.user = { uid: 'another-user' }
     const { result } = renderHook(() => usePoll('poll-1'))
 
     await waitFor(() => expect(result.current.isOwner).toBe(false))

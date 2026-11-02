@@ -11,7 +11,7 @@ export const Route = createRootRoute({
   component: RootComponent,
 })
 
-function RootComponent() {
+export function RootComponent() {
   const { user, logout } = useAuth()
   const { t } = useTranslation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)

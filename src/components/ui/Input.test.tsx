@@ -44,4 +44,33 @@ describe('Input Component', () => {
     await user.type(input, 'Teste')
     expect(input.value).toBe('')
   })
+
+  it('uses the right icon and shows helper text only when there is no error', () => {
+    const { rerender } = render(
+      <Input
+        placeholder="Search"
+        icon={<span data-testid="fallback-icon" />}
+        helperText="Helpful information"
+      />,
+    )
+
+    expect(screen.getByTestId('fallback-icon')).toBeInTheDocument()
+    expect(screen.getByText('Helpful information')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search')).toHaveClass('pr-10')
+
+    rerender(
+      <Input
+        placeholder="Search"
+        rightIcon={<span data-testid="right-icon" />}
+        icon={<span data-testid="fallback-icon" />}
+        helperText="Helpful information"
+        error="Invalid value"
+      />,
+    )
+
+    expect(screen.getByTestId('right-icon')).toBeInTheDocument()
+    expect(screen.queryByTestId('fallback-icon')).not.toBeInTheDocument()
+    expect(screen.queryByText('Helpful information')).not.toBeInTheDocument()
+    expect(screen.getByText('Invalid value')).toBeInTheDocument()
+  })
 })

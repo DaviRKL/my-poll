@@ -61,4 +61,18 @@ describe('Button Component', () => {
     await user.click(button)
     expect(handleClick).not.toHaveBeenCalled()
   })
+
+  it('renders optional icons on both sides of the button content', () => {
+    render(
+      <Button
+        leftIcon={<span data-testid="left-icon" />}
+        rightIcon={<span data-testid="right-icon" />}
+      >
+        Com ícones
+      </Button>,
+    )
+
+    expect(screen.getByTestId('left-icon')).toBeInTheDocument()
+    expect(screen.getByTestId('right-icon')).toBeInTheDocument()
+  })
 })

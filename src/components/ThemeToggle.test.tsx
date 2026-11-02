@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -11,6 +11,7 @@ describe('ThemeToggle Component', () => {
   afterEach(() => {
     localStorage.clear()
     document.documentElement.classList.remove('dark')
+    jest.restoreAllMocks()
   })
 
   it('inicia no modo claro por padrão quando não há preferência salva', () => {
@@ -60,4 +61,44 @@ describe('ThemeToggle Component', () => {
     expect(document.documentElement).toHaveClass('dark')
     expect(screen.getByRole('button', { name: /mudar para o modo claro/i })).toBeInTheDocument()
   })
+
+  it('uses the system dark-mode preference when there is no saved preference', () => {
+    jest.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: true,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    } as unknown as MediaQueryList)
+
+    render(<ThemeToggle />)
+
+    expect(document.documentElement).toHaveClass('dark')
+    expect(screen.getByRole('button', { name: /mudar para o modo claro/i })).toBeInTheDocument()
+  })
+
+  it('synchronizes later system preference changes until a preference is saved', () => {
+    let changeHandler: ((event: MediaQueryListEvent) => void) | undefined
+    jest.spyOn(window.localStorage, 'getItem').mockReturnValue(null)
+    jest.spyOn(window.localStorage, 'setItem').mockImplementation()
+    jest.spyOn(window, 'matchMedia').mockReturnValue({
+      matches: false,
+      addEventListener: (
+        _type: string,
+        listener: EventListenerOrEventListenerObject,
+      ) => {
+        if (typeof listener === 'function') {
+          changeHandler = listener as (event: MediaQueryListEvent) => void
+        }
+      },
+      removeEventListener: jest.fn(),
+    } as unknown as MediaQueryList)
+
+    render(<ThemeToggle />)
+
+    expect(changeHandler).toBeDefined()
+    act(() => changeHandler?.({ matches: true } as MediaQueryListEvent))
+    expect(document.documentElement).toHaveClass('dark')
+    act(() => changeHandler?.({ matches: false } as MediaQueryListEvent))
+    expect(document.documentElement).not.toHaveClass('dark')
+  })
+
 })

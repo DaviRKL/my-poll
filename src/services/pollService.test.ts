@@ -1,4 +1,7 @@
 import {
+  waitFor,
+} from '@testing-library/react'
+import {
   getDoc,
   getDocs,
   onSnapshot,
@@ -15,26 +18,27 @@ import {
   voteOnPoll,
 } from './pollService'
 
-vi.mock('../config/firebase', () => ({
+jest.mock('../config/firebase', () => ({
   auth: { currentUser: null },
   db: {},
 }))
 
-vi.mock('firebase/firestore', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('firebase/firestore')>()
+jest.mock('firebase/firestore', () => {
+  const actual = jest.requireActual<typeof import('firebase/firestore')>(
+    'firebase/firestore',
+  )
   return {
     ...actual,
-    collection: vi.fn((_db, name) => ({ name })),
-    doc: vi.fn((_db, collection, id) => ({ collection, id })),
-    query: vi.fn((...args) => args),
-    where: vi.fn((...args) => args),
-    orderBy: vi.fn((...args) => args),
-    getDocs: vi.fn(),
-    getDoc: vi.fn(),
-    updateDoc: vi.fn().mockResolvedValue(undefined),
-    onSnapshot: vi.fn(),
-    runTransaction: vi.fn(),
+    collection: jest.fn((_db, name) => ({ name })),
+    doc: jest.fn((_db, collection, id) => ({ collection, id })),
+    query: jest.fn((...args) => args),
+    where: jest.fn((...args) => args),
+    orderBy: jest.fn((...args) => args),
+    getDocs: jest.fn(),
+    getDoc: jest.fn(),
+    updateDoc: jest.fn().mockResolvedValue(undefined),
+    onSnapshot: jest.fn(),
+    runTransaction: jest.fn(),
   }
 })
 
@@ -55,19 +59,19 @@ const createQuerySnapshot = (poll: typeof expiredPoll) => ({
 
 describe('pollService lazy expiration', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(updateDoc).mockResolvedValue(undefined)
+    jest.clearAllMocks()
+    jest.mocked(updateDoc).mockResolvedValue(undefined)
   })
 
   it('returns expired polls as finalized and persists the status in the background', async () => {
-    vi.mocked(getDocs).mockResolvedValue(
+    jest.mocked(getDocs).mockResolvedValue(
       createQuerySnapshot(expiredPoll) as never,
     )
 
     const polls = await getPolls()
 
     expect(polls[0].status).toBe('finalizado')
-    await vi.waitFor(() =>
+    await waitFor(() =>
       expect(updateDoc).toHaveBeenCalledWith(
         { collection: 'polls', id: expiredPoll.id },
         { status: 'finalizado' },
@@ -76,27 +80,27 @@ describe('pollService lazy expiration', () => {
   })
 
   it('removes expired polls from a stale status-filtered query', async () => {
-    vi.mocked(getDocs).mockResolvedValue(
+    jest.mocked(getDocs).mockResolvedValue(
       createQuerySnapshot(expiredPoll) as never,
     )
 
     const polls = await getPolls('iniciado')
 
     expect(polls).toEqual([])
-    await vi.waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
   })
 
   it('still returns expired polls when the background write fails', async () => {
-    vi.mocked(getDocs).mockResolvedValue(
+    jest.mocked(getDocs).mockResolvedValue(
       createQuerySnapshot(expiredPoll) as never,
     )
-    vi.mocked(updateDoc).mockRejectedValue(new Error('Permission denied'))
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    jest.mocked(updateDoc).mockRejectedValue(new Error('Permission denied'))
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
 
     const polls = await getPolls()
 
     expect(polls[0].status).toBe('finalizado')
-    await vi.waitFor(() =>
+    await waitFor(() =>
       expect(errorSpy).toHaveBeenCalledWith(
         `Falha ao finalizar a enquete expirada ${expiredPoll.id}.`,
         expect.any(Error),
@@ -106,18 +110,18 @@ describe('pollService lazy expiration', () => {
   })
 
   it('applies lazy expiration to polls created by the user', async () => {
-    vi.mocked(getDocs).mockResolvedValue(
+    jest.mocked(getDocs).mockResolvedValue(
       createQuerySnapshot(expiredPoll) as never,
     )
 
     const polls = await getUserPolls('creator-1')
 
     expect(polls[0].status).toBe('finalizado')
-    await vi.waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
   })
 
   it('applies lazy expiration to polls the user voted in', async () => {
-    vi.mocked(getDocs).mockResolvedValue({
+    jest.mocked(getDocs).mockResolvedValue({
       docs: [
         {
           id: 'expired-poll_user-1',
@@ -130,7 +134,7 @@ describe('pollService lazy expiration', () => {
         },
       ],
     } as never)
-    vi.mocked(getDoc).mockResolvedValue({
+    jest.mocked(getDoc).mockResolvedValue({
       id: expiredPoll.id,
       exists: (): boolean => true,
       data: () => ({ ...expiredPoll }),
@@ -140,7 +144,7 @@ describe('pollService lazy expiration', () => {
 
     expect(polls[0].status).toBe('finalizado')
     expect(polls[0].votedAt).toBeInstanceOf(Timestamp)
-    await vi.waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
   })
 
   it('applies expiration in the realtime listener callback', async () => {
@@ -151,38 +155,38 @@ describe('pollService lazy expiration', () => {
           data: () => Record<string, unknown>
         }) => void)
       | undefined
-    vi.mocked(onSnapshot).mockImplementation(
+    jest.mocked(onSnapshot).mockImplementation(
       ((_reference: DocumentReference, callback: unknown) => {
         receiveSnapshot = callback as typeof receiveSnapshot
-        return vi.fn()
+        return jest.fn()
       }) as never,
     )
-    const onPoll = vi.fn()
+    const onPoll = jest.fn()
 
-    listenToPoll('expired-poll', onPoll, vi.fn())
+    listenToPoll('expired-poll', onPoll, jest.fn())
     receiveSnapshot?.({
       exists: (): boolean => true,
       id: expiredPoll.id,
       data: () => ({ ...expiredPoll }),
     })
 
-    await vi.waitFor(() =>
+    await waitFor(() =>
       expect(onPoll).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'finalizado' }),
       ),
     )
-    await vi.waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(updateDoc).toHaveBeenCalledTimes(1))
   })
 })
 
 describe('voteOnPoll status transitions', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    jest.clearAllMocks()
   })
 
   it('updates an initiated poll to in progress atomically with the first vote', async () => {
     const transaction = {
-      get: vi.fn(async (reference: { collection: string }) =>
+      get: jest.fn(async (reference: { collection: string }) =>
         reference.collection === 'polls'
           ? {
               exists: (): boolean => true,
@@ -193,10 +197,10 @@ describe('voteOnPoll status transitions', () => {
             }
           : { exists: (): boolean => false },
       ),
-      update: vi.fn(),
-      set: vi.fn(),
+      update: jest.fn(),
+      set: jest.fn(),
     }
-    vi.mocked(runTransaction).mockImplementation(
+    jest.mocked(runTransaction).mockImplementation(
       async (_db, updateFunction) =>
         updateFunction(transaction as never),
     )
@@ -220,7 +224,7 @@ describe('voteOnPoll status transitions', () => {
     'rejects votes when the status is %s',
     async (status) => {
       const transaction = {
-        get: vi.fn(async (reference: { collection: string }) =>
+        get: jest.fn(async (reference: { collection: string }) =>
           reference.collection === 'polls'
             ? {
                 exists: (): boolean => true,
@@ -231,10 +235,10 @@ describe('voteOnPoll status transitions', () => {
               }
             : { exists: (): boolean => false },
         ),
-        update: vi.fn(),
-        set: vi.fn(),
+        update: jest.fn(),
+        set: jest.fn(),
       }
-      vi.mocked(runTransaction).mockImplementation(
+      jest.mocked(runTransaction).mockImplementation(
         async (_db, updateFunction) =>
           updateFunction(transaction as never),
       )

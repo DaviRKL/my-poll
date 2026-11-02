@@ -3,8 +3,8 @@ import type { VotedPoll } from '../services/pollService'
 import { getUserVotedPolls } from '../services/pollService'
 import { useMyVotes } from './useMyVotes'
 
-vi.mock('../services/pollService', () => ({
-  getUserVotedPolls: vi.fn(),
+jest.mock('../services/pollService', () => ({
+  getUserVotedPolls: jest.fn(),
 }))
 
 describe('useMyVotes', () => {
@@ -22,7 +22,7 @@ describe('useMyVotes', () => {
         votedAt: new Date('2026-01-02T09:00:00'),
       },
     ]
-    vi.mocked(getUserVotedPolls).mockResolvedValue(votedPolls)
+    jest.mocked(getUserVotedPolls).mockResolvedValue(votedPolls)
 
     const { result } = renderHook(() => useMyVotes('user-1'))
 

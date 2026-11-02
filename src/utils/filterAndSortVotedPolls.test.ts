@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import type { VotedPoll } from '../services/pollService'
 import { filterAndSortVotedPolls } from './filterAndSortVotedPolls'
 

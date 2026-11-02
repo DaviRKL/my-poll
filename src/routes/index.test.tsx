@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { VotedPoll } from '../services/pollService'
 import type { Poll } from '../types'
@@ -9,53 +9,59 @@ import { useMyVotes } from '../hooks/useMyVotes'
 import { usePolls } from '../hooks/usePolls'
 import { PollsListPage, validatePollScopeSearch } from './index'
 
-const routerMock = vi.hoisted(() => ({
+const mockRouter = {
   scope: 'all',
   user: { uid: 'user-1' } as { uid: string } | null,
-  navigate: vi.fn(),
-}))
+  navigate: jest.fn(),
+}
 
-vi.mock('@tanstack/react-router', () => ({
+jest.mock('@tanstack/react-router', () => ({
   createFileRoute:
     () =>
     (options: { component: () => ReactNode }) => ({
       ...options,
-      useSearch: () => ({ scope: routerMock.scope }),
+      useSearch: () => ({ scope: mockRouter.scope }),
     }),
   useNavigate: () => (options: { search?: { scope?: string } }) => {
-    routerMock.navigate(options)
-    if (options.search?.scope) routerMock.scope = options.search.scope
+    mockRouter.navigate(options)
+    if (options.search?.scope) mockRouter.scope = options.search.scope
   },
-  Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+  Link: ({ children, to }: { children: ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }))
 
-vi.mock('react-i18next', () => ({
+jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, defaultValue?: string | Record<string, unknown>) =>
-      typeof defaultValue === 'string' ? defaultValue : key,
+      typeof defaultValue === 'string'
+        ? defaultValue
+        : typeof defaultValue?.defaultValue === 'string'
+          ? defaultValue.defaultValue
+          : key,
   }),
 }))
 
-vi.mock('../components/AuthPrompt', () => ({
+jest.mock('../components/AuthPrompt', () => ({
   AuthPrompt: ({ title }: { title: string }) => (
     <div data-testid="auth-prompt">{title}</div>
   ),
 }))
 
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: vi.fn(),
+jest.mock('../hooks/useAuth', () => ({
+  useAuth: jest.fn(),
 }))
 
-vi.mock('../hooks/usePolls', () => ({
-  usePolls: vi.fn(),
+jest.mock('../hooks/usePolls', () => ({
+  usePolls: jest.fn(),
 }))
 
-vi.mock('../hooks/useMyPolls', () => ({
-  useMyPolls: vi.fn(),
+jest.mock('../hooks/useMyPolls', () => ({
+  useMyPolls: jest.fn(),
 }))
 
-vi.mock('../hooks/useMyVotes', () => ({
-  useMyVotes: vi.fn(),
+jest.mock('../hooks/useMyVotes', () => ({
+  useMyVotes: jest.fn(),
 }))
 
 const polls: Poll[] = [
@@ -98,34 +104,34 @@ const votedPolls: VotedPoll[] = [
 
 describe('PollsListPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    routerMock.scope = 'all'
-    routerMock.user = { uid: 'user-1' }
-    vi.mocked(useAuth).mockReturnValue({
-      user: routerMock.user as never,
+    jest.clearAllMocks()
+    mockRouter.scope = 'all'
+    mockRouter.user = { uid: 'user-1' }
+    jest.mocked(useAuth).mockReturnValue({
+      user: mockRouter.user as never,
       loading: false,
-      loginWithGoogle: vi.fn(),
-      loginAnon: vi.fn(),
-      logout: vi.fn(),
+      loginWithGoogle: jest.fn(),
+      loginAnon: jest.fn(),
+      logout: jest.fn(),
     })
-    vi.mocked(usePolls).mockReturnValue({
+    jest.mocked(usePolls).mockReturnValue({
       polls,
       loading: false,
       error: null,
-      refetch: vi.fn(),
-      addPoll: vi.fn(),
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
     })
-    vi.mocked(useMyPolls).mockReturnValue({
+    jest.mocked(useMyPolls).mockReturnValue({
       polls,
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: jest.fn(),
     })
-    vi.mocked(useMyVotes).mockReturnValue({
+    jest.mocked(useMyVotes).mockReturnValue({
       votedPolls,
       loading: false,
       error: null,
-      refetch: vi.fn(),
+      refetch: jest.fn(),
     })
   })
 
@@ -150,7 +156,7 @@ describe('PollsListPage', () => {
 
     await user.click(screen.getByRole('tab', { name: 'Criadas por mim' }))
 
-    expect(routerMock.navigate).toHaveBeenCalledWith({
+    expect(mockRouter.navigate).toHaveBeenCalledWith({
       search: { scope: 'mine' },
     })
     view.rerender(<PollsListPage />)
@@ -162,13 +168,13 @@ describe('PollsListPage', () => {
   it.each(['Criadas por mim', 'Votadas por mim'] as const)(
     'prompts for authentication instead of changing to %s when signed out',
     async (label) => {
-      routerMock.user = null
-      vi.mocked(useAuth).mockReturnValue({
+      mockRouter.user = null
+      jest.mocked(useAuth).mockReturnValue({
         user: null,
         loading: false,
-        loginWithGoogle: vi.fn(),
-        loginAnon: vi.fn(),
-        logout: vi.fn(),
+        loginWithGoogle: jest.fn(),
+        loginAnon: jest.fn(),
+        logout: jest.fn(),
       })
       const user = userEvent.setup()
 
@@ -176,10 +182,36 @@ describe('PollsListPage', () => {
       await user.click(screen.getByRole('tab', { name: label }))
 
       expect(screen.getByTestId('auth-prompt')).toBeInTheDocument()
-      expect(routerMock.navigate).not.toHaveBeenCalled()
-      expect(routerMock.scope).toBe('all')
+      expect(mockRouter.navigate).not.toHaveBeenCalled()
+      expect(mockRouter.scope).toBe('all')
     },
   )
+
+  it('closes the authentication dialog from its button and backdrop', async () => {
+    mockRouter.user = null
+    jest.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: false,
+      loginWithGoogle: jest.fn(),
+      loginAnon: jest.fn(),
+      logout: jest.fn(),
+    })
+    const user = userEvent.setup()
+    render(<PollsListPage />)
+
+    await user.click(screen.getByRole('tab', { name: 'Criadas por mim' }))
+    const dialog = screen.getByRole('dialog')
+    fireEvent.click(
+      dialog.querySelector('[data-testid="auth-prompt"]') as HTMLElement,
+    )
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Votadas por mim' }))
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 
   it('sorts all and mine by creation date, and voted polls by vote date', async () => {
     const user = userEvent.setup()
@@ -214,7 +246,7 @@ describe('PollsListPage', () => {
   })
 
   it('continues to combine title search with the status filter', async () => {
-    vi.mocked(usePolls).mockReturnValue({
+    jest.mocked(usePolls).mockReturnValue({
       polls: [
         {
           ...polls[0],
@@ -229,8 +261,8 @@ describe('PollsListPage', () => {
       ],
       loading: false,
       error: null,
-      refetch: vi.fn(),
-      addPoll: vi.fn(),
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
     })
     const user = userEvent.setup()
 
@@ -243,8 +275,178 @@ describe('PollsListPage', () => {
     expect(screen.getByText('Frontend framework started')).toBeInTheDocument()
   })
 
+  it('renders all empty-state messages and status translations', async () => {
+    jest.mocked(usePolls).mockReturnValue({
+      polls: [],
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
+    })
+    const user = userEvent.setup()
+    render(<PollsListPage />)
+
+    expect(screen.getByText('Nenhuma enquete encontrada.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Seja o primeiro a publicar uma nova enquete em tempo real!'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Criar enquete agora' })).toHaveAttribute(
+      'href',
+      '/create',
+    )
+
+    for (const [status, label] of [
+      ['não iniciado', 'Não iniciado'],
+      ['iniciado', 'Iniciado'],
+      ['em andamento', 'Em andamento'],
+      ['finalizado', 'Finalizado'],
+    ] as const) {
+      await user.selectOptions(screen.getByLabelText('Status'), status)
+      expect(
+        screen.getByText(
+          `Não há enquetes com o status "${label}". Altere o filtro ou crie uma nova enquete.`,
+        ),
+      ).toBeInTheDocument()
+    }
+
+    await user.selectOptions(screen.getByLabelText('Status'), '')
+    expect(
+      screen.getByText('Seja o primeiro a publicar uma nova enquete em tempo real!'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows loading and error states and retries a failed request', async () => {
+    const refetch = jest.fn()
+    jest.mocked(usePolls).mockReturnValue({
+      polls: [],
+      loading: true,
+      error: null,
+      refetch,
+      addPoll: jest.fn(),
+    })
+    const view = render(<PollsListPage />)
+    expect(screen.getByText('Carregando enquetes...')).toBeInTheDocument()
+
+    jest.mocked(usePolls).mockReturnValue({
+      polls: [],
+      loading: false,
+      error: 'Could not load polls',
+      refetch,
+      addPoll: jest.fn(),
+    })
+    view.rerender(<PollsListPage />)
+    expect(screen.getByText('Could not load polls')).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
+    expect(refetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows distinct empty messages for mine, voted, and search results', async () => {
+    const user = userEvent.setup()
+    const view = render(<PollsListPage />)
+
+    await user.click(screen.getByRole('tab', { name: 'Criadas por mim' }))
+    view.rerender(<PollsListPage />)
+    jest.mocked(useMyPolls).mockReturnValue({
+      polls: [],
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+    })
+    view.rerender(<PollsListPage />)
+    expect(screen.getByText('Você ainda não possui enquetes criadas')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Votadas por mim' }))
+    view.rerender(<PollsListPage />)
+    jest.mocked(useMyVotes).mockReturnValue({
+      votedPolls: [],
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+    })
+    view.rerender(<PollsListPage />)
+    expect(
+      screen.getByText('Você ainda não participou de nenhuma enquete.'),
+    ).toBeInTheDocument()
+
+    mockRouter.scope = 'all'
+    jest.mocked(usePolls).mockReturnValue({
+      polls,
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
+    })
+    view.rerender(<PollsListPage />)
+    await user.type(screen.getByRole('searchbox'), 'no matching title')
+    expect(
+      screen.getByText('Nenhuma enquete corresponde à busca.'),
+    ).toBeInTheDocument()
+  })
+
+  it('sorts oldest first when requested and resets the page after filtering', async () => {
+    const user = userEvent.setup()
+    const manyPolls = Array.from({ length: 11 }, (_, index) => ({
+      ...polls[0],
+      id: `sort-poll-${index}`,
+      title: `Sort poll ${index}`,
+      createdAt: new Date(`2026-02-${String(index + 1).padStart(2, '0')}T09:00:00`),
+    }))
+    jest.mocked(usePolls).mockReturnValue({
+      polls: manyPolls,
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
+    })
+    render(<PollsListPage />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Ordenar por' }), 'asc')
+    expect(screen.getAllByRole('heading', { level: 3 })[0]).toHaveTextContent(
+      'Sort poll 0',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    expect(screen.getByText('Sort poll 10')).toBeInTheDocument()
+    await user.type(screen.getByRole('searchbox'), 'Sort poll 1')
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
+    expect(screen.getByText('Sort poll 1')).toBeInTheDocument()
+  })
+
+  it('navigates to a selected poll and safely ignores polls without an id', () => {
+    const userPoll = { ...polls[0], id: '' }
+    jest.mocked(usePolls).mockReturnValue({
+      polls: [userPoll],
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
+    })
+
+    const { rerender } = render(<PollsListPage />)
+    fireEvent.click(screen.getByRole('heading', { name: userPoll.title }))
+    expect(mockRouter.navigate).not.toHaveBeenCalledWith(
+      expect.objectContaining({ to: '/poll/$pollId' }),
+    )
+
+    jest.mocked(usePolls).mockReturnValue({
+      polls: [polls[0]],
+      loading: false,
+      error: null,
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
+    })
+    rerender(<PollsListPage />)
+    fireEvent.click(screen.getByRole('heading', { name: polls[0].title }))
+    expect(mockRouter.navigate).toHaveBeenCalledWith({
+      to: '/poll/$pollId',
+      params: { pollId: polls[0].id },
+    })
+  })
+
   it('keeps the ten-item page size and navigates to the next page', async () => {
-    vi.mocked(usePolls).mockReturnValue({
+    jest.mocked(usePolls).mockReturnValue({
       polls: Array.from({ length: 11 }, (_, index) => ({
         ...polls[0],
         id: `page-poll-${index}`,
@@ -253,8 +455,8 @@ describe('PollsListPage', () => {
       })),
       loading: false,
       error: null,
-      refetch: vi.fn(),
-      addPoll: vi.fn(),
+      refetch: jest.fn(),
+      addPoll: jest.fn(),
     })
     const user = userEvent.setup()
 
