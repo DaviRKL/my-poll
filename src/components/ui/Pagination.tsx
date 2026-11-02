@@ -55,13 +55,27 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="inline-flex items-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={t('pagination.previous', 'Anterior')}
+          className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronLeft size={16} aria-hidden="true" />
-          {t('pagination.previous', 'Anterior')}
+          <span className="hidden sm:inline">
+            {t('pagination.previous', 'Anterior')}
+          </span>
         </button>
 
-        <div className="flex items-center gap-1">
+        <p
+          className="min-w-0 whitespace-nowrap px-2 text-center text-xs text-neutral-500 dark:text-neutral-400 sm:hidden"
+          aria-live="polite"
+        >
+          {t('pagination.pageOf', {
+            current: currentPage,
+            total: totalPages,
+            defaultValue: `Página ${currentPage} de ${totalPages}`,
+          })}
+        </p>
+
+        <div className="hidden items-center gap-1 sm:flex">
           {pages.map((page) =>
             typeof page === 'number' ? (
               <button
@@ -77,7 +91,7 @@ export function Pagination({
                   page === currentPage
                     ? 'bg-primary-500 text-white'
                     : 'border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                }`}
+                } min-h-[40px] min-w-[40px] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900`}
               >
                 {page}
               </button>
@@ -97,13 +111,19 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="inline-flex items-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label={t('pagination.next', 'Próximo')}
+          className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center gap-1 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {t('pagination.next', 'Próximo')}
+          <span className="hidden sm:inline">
+            {t('pagination.next', 'Próximo')}
+          </span>
           <ChevronRight size={16} aria-hidden="true" />
         </button>
       </div>
-      <p className="text-xs text-neutral-500 dark:text-neutral-400" aria-live="polite">
+      <p
+        className="hidden text-xs text-neutral-500 dark:text-neutral-400 sm:block"
+        aria-live="polite"
+      >
         {t('pagination.pageOf', {
           current: currentPage,
           total: totalPages,

@@ -2,12 +2,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useAuth } from '../hooks/useAuth'
 import { createPoll } from '../services/pollService'
-import { CreatePollPage } from './create'
+import { Route } from './create'
+
+const CreatePollPage = Route.options.component!
 
 const mockNavigate = jest.fn()
 
 jest.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => (options: unknown) => options,
+  createFileRoute: () => (options: unknown) => ({ options }),
   useNavigate: () => mockNavigate,
 }))
 

@@ -7,7 +7,10 @@ import { useAuth } from "../hooks/useAuth";
 import { useMyPolls } from "../hooks/useMyPolls";
 import { useMyVotes } from "../hooks/useMyVotes";
 import { usePolls } from "../hooks/usePolls";
-import { PollsListPage, validatePollScopeSearch } from "./index";
+import { Route } from "./index";
+
+const PollsListPage = Route.options.component!;
+const validatePollScopeSearch = Route.options.validateSearch!;
 
 const mockRouter = {
   scope: "all",
@@ -18,6 +21,7 @@ const mockRouter = {
 jest.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: { component: () => ReactNode }) => ({
     ...options,
+    options,
     useSearch: () => ({ scope: mockRouter.scope }),
   }),
   useNavigate: () => (options: { search?: { scope?: string } }) => {

@@ -18,13 +18,13 @@ import { filterAndSortPolls } from '../utils/filterAndSortPolls'
 import { filterAndSortVotedPolls } from '../utils/filterAndSortVotedPolls'
 import { formatPollDate } from '../utils/formatDate'
 
-export type PollScope = 'all' | 'mine' | 'voted'
+type PollScope = 'all' | 'mine' | 'voted'
 
 function isPollScope(scope: unknown): scope is PollScope {
   return scope === 'all' || scope === 'mine' || scope === 'voted'
 }
 
-export function validatePollScopeSearch(
+function validatePollScopeSearch(
   search: Record<string, unknown>,
 ): { scope?: PollScope } {
   return { scope: isPollScope(search.scope) ? search.scope : 'all' }
@@ -37,7 +37,7 @@ export const Route = createFileRoute('/')({
 
 const scopeOptions: PollScope[] = ['all', 'mine', 'voted']
 
-export function PollsListPage() {
+function PollsListPage() {
   const navigate = useNavigate({ from: '/' })
   const scope = Route.useSearch().scope ?? 'all'
   const { t } = useTranslation()

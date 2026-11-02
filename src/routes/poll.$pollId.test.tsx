@@ -3,7 +3,9 @@ import userEvent from '@testing-library/user-event'
 import type { Poll } from '../types'
 import { useAuth } from '../hooks/useAuth'
 import { usePoll } from '../hooks/usePoll'
-import { PollDetailsPage } from './poll.$pollId'
+import { Route } from './poll.$pollId'
+
+const PollDetailsPage = Route.options.component!
 
 const mockNavigate = jest.fn()
 const mockPoll: Poll = {
@@ -31,7 +33,10 @@ const mockPollState = {
 }
 
 jest.mock('@tanstack/react-router', () => ({
-  createFileRoute: () => () => ({ useParams: () => ({ pollId: 'poll-1' }) }),
+  createFileRoute: () => (options: unknown) => ({
+    options,
+    useParams: () => ({ pollId: 'poll-1' }),
+  }),
   useNavigate: () => mockNavigate,
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>

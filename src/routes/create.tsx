@@ -16,7 +16,7 @@ export const Route = createFileRoute('/create')({
   component: CreatePollPage,
 })
 
-export function CreatePollPage() {
+function CreatePollPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useTranslation()
