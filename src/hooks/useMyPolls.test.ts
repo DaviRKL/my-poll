@@ -38,6 +38,7 @@ describe('useMyPolls', () => {
 
     expect(result.current.polls).toEqual([])
     expect(result.current.loading).toBe(false)
-    expect(getUserPolls).not.toHaveBeenCalled()
+    expect(result.current.error).toBeNull();
+    expect(getUserPolls).not.toHaveBeenCalled();
   })
 })

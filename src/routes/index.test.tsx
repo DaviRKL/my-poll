@@ -1,194 +1,268 @@
+import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PollsListPage } from '../pages/PollsListPage'
-import { usePolls } from '../hooks/usePolls'
+import type { VotedPoll } from '../services/pollService'
 import type { Poll } from '../types'
+import { useAuth } from '../hooks/useAuth'
+import { useMyPolls } from '../hooks/useMyPolls'
+import { useMyVotes } from '../hooks/useMyVotes'
+import { usePolls } from '../hooks/usePolls'
+import { PollsListPage, validatePollScopeSearch } from './index'
 
-// Mock de @tanstack/react-router
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
-  Link: ({
-    children,
-    to,
-    ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
+const routerMock = vi.hoisted(() => ({
+  scope: 'all',
+  user: { uid: 'user-1' } as { uid: string } | null,
+  navigate: vi.fn(),
 }))
 
-// Mock de react-i18next
+vi.mock('@tanstack/react-router', () => ({
+  createFileRoute:
+    () =>
+    (options: { component: () => ReactNode }) => ({
+      ...options,
+      useSearch: () => ({ scope: routerMock.scope }),
+    }),
+  useNavigate: () => (options: { search?: { scope?: string } }) => {
+    routerMock.navigate(options)
+    if (options.search?.scope) routerMock.scope = options.search.scope
+  },
+  Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+}))
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue?: string | Record<string, unknown>) => {
-      const dictionary: Record<string, string> = {
-        'home.title': 'Enquetes',
-        'home.subtitle': 'Encontre aqui a sua enquete',
-        'home.statusLabel': 'Status',
-        'home.statusAll': 'Todas',
-        'home.statusNotStarted': 'Não iniciado',
-        'home.statusStarted': 'Iniciado',
-        'home.statusInProgress': 'Em andamento',
-        'home.statusFinished': 'Finalizado',
-        'home.searchEmpty': 'Nenhuma enquete corresponde aos filtros selecionados.',
-        'home.emptyTitle': 'Nenhuma enquete encontrada.',
-        'home.emptyGeneral': 'Seja o primeiro a publicar uma nova enquete em tempo real!',
-        'home.createButton': 'Criar enquete agora',
-        'home.startDatePrefix': 'Inicio: ',
-        'home.endDatePrefix': 'Término: ',
-        'search.placeholder': 'Pesquisar enquete...',
-        'search.sortLabel': 'Ordenar por',
-        'search.newest': 'Mais recentes',
-        'search.oldest': 'Mais antigas',
-        'common.loadingPolls': 'Carregando enquetes...',
-        'common.tryAgain': 'Tentar novamente',
-      }
-      if (typeof defaultValue === 'string') return dictionary[key] || defaultValue
-      return dictionary[key] || key
-    },
+    t: (key: string, defaultValue?: string | Record<string, unknown>) =>
+      typeof defaultValue === 'string' ? defaultValue : key,
   }),
 }))
 
-// Mock do hook usePolls
+vi.mock('../components/AuthPrompt', () => ({
+  AuthPrompt: ({ title }: { title: string }) => (
+    <div data-testid="auth-prompt">{title}</div>
+  ),
+}))
+
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: vi.fn(),
+}))
+
 vi.mock('../hooks/usePolls', () => ({
   usePolls: vi.fn(),
 }))
 
+vi.mock('../hooks/useMyPolls', () => ({
+  useMyPolls: vi.fn(),
+}))
+
+vi.mock('../hooks/useMyVotes', () => ({
+  useMyVotes: vi.fn(),
+}))
+
+const polls: Poll[] = [
+  {
+    id: 'created-newer',
+    title: 'Created newest',
+    startDate: new Date('2026-01-01T10:00:00'),
+    endDate: new Date('2026-01-10T18:00:00'),
+    status: 'em andamento',
+    options: [],
+    createdBy: 'user-1',
+    createdAt: new Date('2026-02-02T09:00:00'),
+  },
+  {
+    id: 'created-older',
+    title: 'Created older',
+    startDate: new Date('2026-01-01T10:00:00'),
+    endDate: new Date('2026-01-10T18:00:00'),
+    status: 'em andamento',
+    options: [],
+    createdBy: 'user-1',
+    createdAt: new Date('2026-02-01T09:00:00'),
+  },
+]
+
+const votedPolls: VotedPoll[] = [
+  {
+    ...polls[0],
+    id: 'voted-older',
+    title: 'Voted older',
+    votedAt: new Date('2026-02-01T09:00:00'),
+  },
+  {
+    ...polls[1],
+    id: 'voted-newer',
+    title: 'Voted newest',
+    votedAt: new Date('2026-02-02T09:00:00'),
+  },
+]
+
 describe('PollsListPage', () => {
-  const mockRefetch = vi.fn()
-
-  const mockPollsList: Poll[] = [
-    {
-      id: 'poll-1',
-      title: 'Qual o melhor framework frontend?',
-      startDate: new Date('2026-01-01T10:00:00'),
-      endDate: new Date('2026-01-10T18:00:00'),
-      status: 'em andamento',
-      options: [
-        { id: '1', text: 'React', votes: 15 },
-        { id: '2', text: 'Angular', votes: 5 },
-        { id: '3', text: 'Vue', votes: 11 },
-      ],
-      createdBy: 'user-123',
-      createdAt: new Date('2026-01-01T09:00:00'),
-    },
-    {
-      id: 'poll-2',
-      title: 'Qual a melhor linguagem do momento?',
-      startDate: new Date('2026-02-01T10:00:00'),
-      endDate: new Date('2026-02-15T18:00:00'),
-      status: 'em andamento',
-      options: [
-        { id: '1', text: 'TypeScript', votes: 20 },
-        { id: '2', text: 'Python', votes: 10 },
-        { id: '3', text: 'Rust', votes: 8 },
-      ],
-      createdBy: 'user-456',
-      createdAt: new Date('2026-02-01T09:00:00'),
-    },
-  ]
-
   beforeEach(() => {
     vi.clearAllMocks()
+    routerMock.scope = 'all'
+    routerMock.user = { uid: 'user-1' }
+    vi.mocked(useAuth).mockReturnValue({
+      user: routerMock.user as never,
+      loading: false,
+      loginWithGoogle: vi.fn(),
+      loginAnon: vi.fn(),
+      logout: vi.fn(),
+    })
     vi.mocked(usePolls).mockReturnValue({
-      polls: mockPollsList,
+      polls,
       loading: false,
       error: null,
-      refetch: mockRefetch,
+      refetch: vi.fn(),
       addPoll: vi.fn(),
     })
-  })
-
-  it('renderiza o cabeçalho e o subtítulo da página de enquetes', () => {
-    render(<PollsListPage />)
-
-    expect(screen.getByRole('heading', { level: 1, name: 'Enquetes' })).toBeInTheDocument()
-    expect(screen.getByText('Encontre aqui a sua enquete')).toBeInTheDocument()
-  })
-
-  it('renderiza o filtro de status com o valor padrão "Todas" e as opções esperadas', () => {
-    render(<PollsListPage />)
-
-    const select = screen.getByLabelText(/status/i) as HTMLSelectElement
-    expect(select).toBeInTheDocument()
-    expect(select.value).toBe('')
-
-    expect(screen.getByRole('option', { name: 'Todas' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Não iniciado' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Iniciado' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Em andamento' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Finalizado' })).toBeInTheDocument()
-  })
-
-  it('renderiza os títulos das enquetes simuladas pelo hook usePolls', () => {
-    render(<PollsListPage />)
-
-    expect(
-      screen.getByText('Qual o melhor framework frontend?'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText('Qual a melhor linguagem do momento?'),
-    ).toBeInTheDocument()
-  })
-
-  it('permite ao utilizador alterar a opção selecionada no filtro de status', async () => {
-    const user = userEvent.setup()
-    render(<PollsListPage />)
-
-    const select = screen.getByLabelText(/status/i) as HTMLSelectElement
-    await user.selectOptions(select, 'finalizado')
-
-    expect(select.value).toBe('finalizado')
-  })
-
-  it('permite filtrar enquetes pelo status iniciado', async () => {
-    const user = userEvent.setup()
-    render(<PollsListPage />)
-
-    const select = screen.getByLabelText(/status/i) as HTMLSelectElement
-    await user.selectOptions(select, 'iniciado')
-
-    expect(select.value).toBe('iniciado')
-    expect(usePolls).toHaveBeenLastCalledWith('iniciado')
-  })
-
-  it('filtra títulos sem diferenciar maiúsculas de minúsculas', async () => {
-    const user = userEvent.setup()
-    render(<PollsListPage />)
-
-    await user.type(screen.getByRole('searchbox'), 'framework')
-
-    expect(screen.getByText('Qual o melhor framework frontend?')).toBeInTheDocument()
-    expect(screen.queryByText('Qual a melhor linguagem do momento?')).not.toBeInTheDocument()
-  })
-
-  it('exibe mensagem de carregando quando loading for verdadeiro', () => {
-    vi.mocked(usePolls).mockReturnValue({
-      polls: [],
-      loading: true,
-      error: null,
-      refetch: mockRefetch,
-      addPoll: vi.fn(),
-    })
-
-    render(<PollsListPage />)
-    expect(screen.getByText('Carregando enquetes...')).toBeInTheDocument()
-  })
-
-  it('exibe a mensagem de nenhuma enquete encontrada quando o array de enquetes estiver vazio', () => {
-    vi.mocked(usePolls).mockReturnValue({
-      polls: [],
+    vi.mocked(useMyPolls).mockReturnValue({
+      polls,
       loading: false,
       error: null,
-      refetch: mockRefetch,
-      addPoll: vi.fn(),
+      refetch: vi.fn(),
+    })
+    vi.mocked(useMyVotes).mockReturnValue({
+      votedPolls,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+  })
+
+  it('validates the default scope as all and renders the all-polls view', () => {
+    expect(validatePollScopeSearch({})).toEqual({ scope: 'all' })
+    expect(validatePollScopeSearch({ scope: 'invalid' })).toEqual({
+      scope: 'all',
     })
 
     render(<PollsListPage />)
-    expect(screen.getByText('Nenhuma enquete encontrada.')).toBeInTheDocument()
+
+    expect(screen.getByRole('tab', { name: 'Todas' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByText('Created newest')).toBeInTheDocument()
+  })
+
+  it('updates the query scope when a signed-in user changes tabs', async () => {
+    const user = userEvent.setup()
+    const view = render(<PollsListPage />)
+
+    await user.click(screen.getByRole('tab', { name: 'Criadas por mim' }))
+
+    expect(routerMock.navigate).toHaveBeenCalledWith({
+      search: { scope: 'mine' },
+    })
+    view.rerender(<PollsListPage />)
     expect(
-      screen.getByRole('button', { name: /criar enquete agora/i }),
+      screen.getByRole('tab', { name: 'Criadas por mim' }),
+    ).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it.each(['Criadas por mim', 'Votadas por mim'] as const)(
+    'prompts for authentication instead of changing to %s when signed out',
+    async (label) => {
+      routerMock.user = null
+      vi.mocked(useAuth).mockReturnValue({
+        user: null,
+        loading: false,
+        loginWithGoogle: vi.fn(),
+        loginAnon: vi.fn(),
+        logout: vi.fn(),
+      })
+      const user = userEvent.setup()
+
+      render(<PollsListPage />)
+      await user.click(screen.getByRole('tab', { name: label }))
+
+      expect(screen.getByTestId('auth-prompt')).toBeInTheDocument()
+      expect(routerMock.navigate).not.toHaveBeenCalled()
+      expect(routerMock.scope).toBe('all')
+    },
+  )
+
+  it('sorts all and mine by creation date, and voted polls by vote date', async () => {
+    const user = userEvent.setup()
+    const view = render(<PollsListPage />)
+    const getCardTitles = () =>
+      screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+
+    expect(getCardTitles()).toEqual(['Created newest', 'Created older'])
+
+    await user.click(screen.getByRole('tab', { name: 'Criadas por mim' }))
+    view.rerender(<PollsListPage />)
+    expect(getCardTitles()).toEqual(['Created newest', 'Created older'])
+
+    await user.click(screen.getByRole('tab', { name: 'Votadas por mim' }))
+    view.rerender(<PollsListPage />)
+    expect(getCardTitles()).toEqual(['Voted newest', 'Voted older'])
+  })
+
+  it('changes the sort labels for vote dates in the voted scope', async () => {
+    const user = userEvent.setup()
+    const view = render(<PollsListPage />)
+
+    await user.click(screen.getByRole('tab', { name: 'Votadas por mim' }))
+    view.rerender(<PollsListPage />)
+
+    expect(
+      screen.getByRole('option', { name: 'Votos mais recentes' }),
     ).toBeInTheDocument()
+    expect(
+      screen.getByRole('option', { name: 'Votos mais antigos' }),
+    ).toBeInTheDocument()
+  })
+
+  it('continues to combine title search with the status filter', async () => {
+    vi.mocked(usePolls).mockReturnValue({
+      polls: [
+        {
+          ...polls[0],
+          title: 'Frontend framework recent',
+          status: 'em andamento',
+        },
+        {
+          ...polls[1],
+          title: 'Frontend framework started',
+          status: 'iniciado',
+        },
+      ],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+      addPoll: vi.fn(),
+    })
+    const user = userEvent.setup()
+
+    render(<PollsListPage />)
+    await user.type(screen.getByRole('searchbox'), 'FRAMEWORK')
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(2)
+
+    await user.selectOptions(screen.getByLabelText('Status'), 'iniciado')
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1)
+    expect(screen.getByText('Frontend framework started')).toBeInTheDocument()
+  })
+
+  it('keeps the ten-item page size and navigates to the next page', async () => {
+    vi.mocked(usePolls).mockReturnValue({
+      polls: Array.from({ length: 11 }, (_, index) => ({
+        ...polls[0],
+        id: `page-poll-${index}`,
+        title: `Page poll ${index}`,
+        createdAt: new Date(`2026-02-${String(index + 1).padStart(2, '0')}T09:00:00`),
+      })),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+      addPoll: vi.fn(),
+    })
+    const user = userEvent.setup()
+
+    render(<PollsListPage />)
+
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(10)
+    await user.click(screen.getByRole('button', { name: 'Próximo' }))
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1)
+    expect(screen.getByText('Page poll 0')).toBeInTheDocument()
   })
 })

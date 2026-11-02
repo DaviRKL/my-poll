@@ -11,6 +11,7 @@ export const useMyPolls = (userId: string | null) => {
     if (!userId) {
       setPolls([]);
       setLoading(false);
+      setError(null);
       return;
     }
 

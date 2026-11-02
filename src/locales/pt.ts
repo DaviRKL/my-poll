@@ -8,6 +8,7 @@ export const pt = {
     logout: 'Sair',
     logoutAria: 'Sair da conta',
     back: 'Voltar',
+    close: 'Fechar',
     tryAgain: 'Tentar novamente',
     themeLight: 'Ativar modo claro',
     themeDark: 'Ativar modo escuro',
@@ -19,14 +20,16 @@ export const pt = {
   nav: {
     polls: 'Enquetes',
     createPoll: 'Criar enquete',
-    myPolls: 'Minhas Enquetes',
-    myVotes: 'Meus Votos',
     openMenu: 'Abrir menu',
     closeMenu: 'Fechar menu',
   },
   home: {
     title: 'Enquetes',
     subtitle: 'Encontre aqui a sua enquete',
+    scopeLabel: 'Escopo das enquetes',
+    allPolls: 'Todas',
+    myPolls: 'Criadas por mim',
+    myVotes: 'Votadas por mim',
     statusLabel: 'Status',
     statusAll: 'Todas',
     statusNotStarted: 'Não iniciado',
@@ -49,6 +52,8 @@ export const pt = {
     sortLabel: 'Ordenar por',
     newest: 'Mais recentes',
     oldest: 'Mais antigas',
+    sortCreatedAtDesc: 'Mais recentes',
+    sortCreatedAtAsc: 'Mais antigas',
     sortVotedAtDesc: 'Votos mais recentes',
     sortVotedAtAsc: 'Votos mais antigos',
   },
@@ -113,12 +118,9 @@ export const pt = {
     title: 'Inicie sessão para continuar',
     description:
       'É necessário identificar-se para poder criar enquetes e registrar votos em tempo real.',
-    myPollsTitle: 'Entre para ver suas enquetes',
-    myPollsDescription:
-      'Faça login para visualizar as enquetes que você criou.',
-    myVotesTitle: 'Entre para ver seus votos',
-    myVotesDescription:
-      'Faça login para visualizar as enquetes em que você votou.',
+    privatePollsTitle: 'Entre para ver suas enquetes',
+    privatePollsDescription:
+      'Faça login para acessar suas enquetes e votos.',
     google: 'Entrar com Google',
     connecting: 'A conectar...',
     anonymous: 'Continuar anonimamente',
