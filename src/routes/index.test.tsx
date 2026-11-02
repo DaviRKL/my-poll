@@ -31,11 +31,16 @@ vi.mock('react-i18next', () => ({
         'home.statusStarted': 'Iniciado',
         'home.statusInProgress': 'Em andamento',
         'home.statusFinished': 'Finalizado',
+        'home.searchEmpty': 'Nenhuma enquete corresponde aos filtros selecionados.',
         'home.emptyTitle': 'Nenhuma enquete encontrada.',
         'home.emptyGeneral': 'Seja o primeiro a publicar uma nova enquete em tempo real!',
         'home.createButton': 'Criar enquete agora',
         'home.startDatePrefix': 'Inicio: ',
         'home.endDatePrefix': 'Término: ',
+        'search.placeholder': 'Pesquisar enquete...',
+        'search.sortLabel': 'Ordenar por',
+        'search.newest': 'Mais recentes',
+        'search.oldest': 'Mais antigas',
         'common.loadingPolls': 'Carregando enquetes...',
         'common.tryAgain': 'Tentar novamente',
       }
@@ -146,6 +151,16 @@ describe('PollsListPage', () => {
 
     expect(select.value).toBe('iniciado')
     expect(usePolls).toHaveBeenLastCalledWith('iniciado')
+  })
+
+  it('filtra títulos sem diferenciar maiúsculas de minúsculas', async () => {
+    const user = userEvent.setup()
+    render(<PollsListPage />)
+
+    await user.type(screen.getByRole('searchbox'), 'framework')
+
+    expect(screen.getByText('Qual o melhor framework frontend?')).toBeInTheDocument()
+    expect(screen.queryByText('Qual a melhor linguagem do momento?')).not.toBeInTheDocument()
   })
 
   it('exibe mensagem de carregando quando loading for verdadeiro', () => {

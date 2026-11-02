@@ -33,6 +33,7 @@ export const pt = {
     statusInProgress: 'Em andamento',
     statusFinished: 'Finalizado',
     noPollsCreated: 'Você ainda não possui enquetes criadas',
+    searchEmpty: 'Nenhuma enquete corresponde aos filtros selecionados.',
     emptyTitle: 'Nenhuma enquete encontrada.',
     emptyFiltered:
       'Não há enquetes com o status "{{status}}". Altere o filtro ou crie uma nova enquete.',
@@ -40,6 +41,12 @@ export const pt = {
     createButton: 'Criar enquete agora',
     startDatePrefix: 'Inicio: ',
     endDatePrefix: 'Término: ',
+  },
+  search: {
+    placeholder: 'Pesquisar enquete...',
+    sortLabel: 'Ordenar por',
+    newest: 'Mais recentes',
+    oldest: 'Mais antigas',
   },
   create: {
     title: 'Criar enquete',

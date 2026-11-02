@@ -33,6 +33,7 @@ export const en = {
     statusInProgress: 'In progress',
     statusFinished: 'Finished',
     noPollsCreated: 'You have not created any polls yet',
+    searchEmpty: 'No polls match the selected filters.',
     emptyTitle: 'No polls found.',
     emptyFiltered:
       'There are no polls with status "{{status}}". Change the filter or create a new poll.',
@@ -40,6 +41,12 @@ export const en = {
     createButton: 'Create poll now',
     startDatePrefix: 'Start: ',
     endDatePrefix: 'End: ',
+  },
+  search: {
+    placeholder: 'Search polls...',
+    sortLabel: 'Sort by',
+    newest: 'Newest first',
+    oldest: 'Oldest first',
   },
   create: {
     title: 'Create poll',
